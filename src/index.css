@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: 15 15 20;
+  --surface-elevated: 24 24 32;
+  --surface-border: 255 255 255 / 0.08;
+  --accent: 99 102 241;
+  --accent-muted: 99 102 241;
+}
+
+html:not(.dark) {
+  --surface: 250 250 252;
+  --surface-elevated: 255 255 255;
+  --surface-border: 0 0 0 / 0.08;
+}
+
+@layer base {
+  body {
+    @apply bg-surface font-sans antialiased text-white;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-white/10;
+  }
+}
+
+.mirror {
+  transform: scaleX(-1);
+}
