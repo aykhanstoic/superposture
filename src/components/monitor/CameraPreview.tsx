@@ -1,14 +1,14 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 
 interface CameraPreviewProps {
-  videoRef: RefObject<HTMLVideoElement | null>;
-  canvasRef: RefObject<HTMLCanvasElement | null>;
+  stream: MediaStream | null;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   error: string | null;
   isActive: boolean;
 }
 
 export function CameraPreview({
-  videoRef,
+  stream,
   canvasRef,
   error,
   isActive,
@@ -16,13 +16,16 @@ export function CameraPreview({
   const displayVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const source = videoRef.current;
     const display = displayVideoRef.current;
-    if (source?.srcObject && display) {
-      display.srcObject = source.srcObject;
+    if (!display) return;
+
+    if (stream) {
+      display.srcObject = stream;
       display.play().catch(() => undefined);
+    } else {
+      display.srcObject = null;
     }
-  }, [videoRef, isActive]);
+  }, [stream]);
 
   if (error) {
     return (
@@ -39,6 +42,7 @@ export function CameraPreview({
         className="h-64 w-full object-cover mirror"
         playsInline
         muted
+        autoPlay
       />
       <canvas
         ref={canvasRef}

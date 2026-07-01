@@ -5,6 +5,8 @@ interface PostureState {
   currentResult: PostureResult | null;
   isMonitoring: boolean;
   isPoseReady: boolean;
+  initStatus: string;
+  initError: string | null;
   fps: number;
   sessionId: number | null;
   monitoringSeconds: number;
@@ -16,6 +18,8 @@ interface PostureState {
   setCurrentResult: (result: PostureResult | null) => void;
   setIsMonitoring: (monitoring: boolean) => void;
   setIsPoseReady: (ready: boolean) => void;
+  setInitStatus: (status: string) => void;
+  setInitError: (error: string | null) => void;
   setFps: (fps: number) => void;
   setSessionId: (id: number | null) => void;
   incrementMonitoringSeconds: () => void;
@@ -30,6 +34,8 @@ export const usePostureStore = create<PostureState>((set) => ({
   currentResult: null,
   isMonitoring: false,
   isPoseReady: false,
+  initStatus: "Initializing...",
+  initError: null,
   fps: 0,
   sessionId: null,
   monitoringSeconds: 0,
@@ -41,6 +47,8 @@ export const usePostureStore = create<PostureState>((set) => ({
   setCurrentResult: (currentResult) => set({ currentResult }),
   setIsMonitoring: (isMonitoring) => set({ isMonitoring }),
   setIsPoseReady: (isPoseReady) => set({ isPoseReady }),
+  setInitStatus: (initStatus) => set({ initStatus }),
+  setInitError: (initError) => set({ initError }),
   setFps: (fps) => set({ fps }),
   setSessionId: (sessionId) => set({ sessionId }),
   incrementMonitoringSeconds: () =>

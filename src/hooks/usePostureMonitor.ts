@@ -18,12 +18,24 @@ import { isTauri } from "@/utils";
 
 const SAMPLE_INTERVAL_MS = 5000;
 
+function isVideoReady(video: HTMLVideoElement): boolean {
+  return (
+    video.srcObject !== null &&
+    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+    video.videoWidth > 0 &&
+    video.videoHeight > 0
+  );
+}
+
 export function usePostureMonitor(
   camera: ReturnType<typeof useCamera>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
 ) {
   const cameraId = useSettingsStore((s) => s.cameraId);
   const togglePaused = useSettingsStore((s) => s.togglePaused);
+
+  const cameraRef = useRef(camera);
+  cameraRef.current = camera;
 
   const detectorRef = useRef<PoseDetector | null>(null);
   const smootherRef = useRef(new LandmarkSmoother());
@@ -32,6 +44,7 @@ export function usePostureMonitor(
   const frameCountRef = useRef(0);
   const scoreAccumulatorRef = useRef<number[]>([]);
   const sessionReminderRef = useRef(0);
+  const initGenerationRef = useRef(0);
 
   const checkReminder = useCallback(() => {
     const { currentResult, poorPostureSince, canSendReminder } =
@@ -65,24 +78,55 @@ export function usePostureMonitor(
   }, []);
 
   useEffect(() => {
+    const generation = ++initGenerationRef.current;
     let mounted = true;
-    let secondsInterval: ReturnType<typeof setInterval>;
-    let fpsInterval: ReturnType<typeof setInterval>;
+    let secondsInterval: ReturnType<typeof setInterval> | undefined;
+    let fpsInterval: ReturnType<typeof setInterval> | undefined;
+
+    const isCurrent = () => mounted && initGenerationRef.current === generation;
 
     async function init() {
-      await initDatabase();
-      const detector = new PoseDetector();
-      await detector.initialize();
-      if (!mounted) {
+      usePostureStore.getState().setInitStatus("Starting camera...");
+      usePostureStore.getState().setInitError(null);
+      usePostureStore.getState().setIsPoseReady(false);
+
+      // Camera first — gives immediate feedback and unblocks preview.
+      await cameraRef.current.startCamera();
+      if (!isCurrent()) return;
+
+      usePostureStore.getState().setInitStatus("Loading pose model...");
+
+      const dbPromise = initDatabase().catch((err) => {
+        console.warn("Database init failed (non-fatal):", err);
+      });
+
+      let detector: PoseDetector;
+      try {
+        detector = new PoseDetector();
+        await detector.initialize();
+      } catch (err) {
+        console.error("Pose model init failed:", err);
+        if (isCurrent()) {
+          usePostureStore.getState().setInitError(
+            "Could not load pose model. Check your internet connection and restart the app.",
+          );
+          usePostureStore.getState().setInitStatus("Model failed to load");
+        }
+        return;
+      }
+
+      if (!isCurrent()) {
         detector.dispose();
         return;
       }
+
       detectorRef.current = detector;
       smootherRef.current.reset();
-
       usePostureStore.getState().setIsPoseReady(true);
-      await camera.startCamera();
-      if (!mounted) return;
+      usePostureStore.getState().setInitStatus("Detecting posture");
+
+      await dbPromise;
+      if (!isCurrent()) return;
 
       const id = await startSession();
       usePostureStore.getState().setSessionId(id);
@@ -91,14 +135,14 @@ export function usePostureMonitor(
       sessionReminderRef.current = 0;
 
       const tick = (timestamp: number) => {
-        if (!mounted) return;
+        if (!isCurrent()) return;
 
-        const video = camera.videoRef.current;
+        const video = cameraRef.current.videoRef.current;
         const canvas = canvasRef.current;
         const detectorInstance = detectorRef.current;
         const isPaused = useSettingsStore.getState().paused;
 
-        if (video && detectorInstance && camera.isActive && !isPaused) {
+        if (video && detectorInstance && isVideoReady(video) && !isPaused) {
           const raw = detectorInstance.detect(video, timestamp);
           if (raw) {
             frameCountRef.current += 1;
@@ -111,7 +155,9 @@ export function usePostureMonitor(
             checkReminder();
             usePostureStore
               .getState()
-              .updateGoodStreak(result.status === "good" || result.status === "excellent");
+              .updateGoodStreak(
+                result.status === "good" || result.status === "excellent",
+              );
 
             const preview = useSettingsStore.getState().showCameraPreview;
             if (preview && canvas) {
@@ -152,13 +198,15 @@ export function usePostureMonitor(
 
     return () => {
       mounted = false;
+      initGenerationRef.current += 1;
       cancelAnimationFrame(rafRef.current);
-      clearInterval(secondsInterval!);
-      clearInterval(fpsInterval!);
+      if (secondsInterval) clearInterval(secondsInterval);
+      if (fpsInterval) clearInterval(fpsInterval);
       detectorRef.current?.dispose();
       detectorRef.current = null;
-      camera.stopCamera();
+      cameraRef.current.stopCamera();
       usePostureStore.getState().setIsMonitoring(false);
+      usePostureStore.getState().setIsPoseReady(false);
 
       const state = usePostureStore.getState();
       if (state.sessionId) {
@@ -181,7 +229,8 @@ export function usePostureMonitor(
         );
       }
     };
-  }, [cameraId, camera, canvasRef, checkReminder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraId]);
 
   useEffect(() => {
     if (!isTauri()) return;

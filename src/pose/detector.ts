@@ -15,8 +15,6 @@ const LANDMARK_INDICES = {
   rightShoulder: 12,
   leftElbow: 13,
   rightElbow: 14,
-  leftHip: 23,
-  rightHip: 24,
 } as const;
 
 export class PoseDetector {
@@ -29,17 +27,26 @@ export class PoseDetector {
     if (this.landmarker) return;
 
     const vision = await FilesetResolver.forVisionTasks(WASM_BASE);
-    this.landmarker = await PoseLandmarker.createFromOptions(vision, {
+    const options = {
       baseOptions: {
         modelAssetPath: POSE_LANDMARKER_MODEL,
-        delegate: "GPU",
+        delegate: "GPU" as const,
       },
-      runningMode: "VIDEO",
+      runningMode: "VIDEO" as const,
       numPoses: 1,
       minPoseDetectionConfidence: 0.5,
       minPosePresenceConfidence: 0.5,
       minTrackingConfidence: 0.5,
-    });
+    };
+
+    try {
+      this.landmarker = await PoseLandmarker.createFromOptions(vision, options);
+    } catch {
+      this.landmarker = await PoseLandmarker.createFromOptions(vision, {
+        ...options,
+        baseOptions: { ...options.baseOptions, delegate: "CPU" },
+      });
+    }
   }
 
   detect(
@@ -76,8 +83,6 @@ export class PoseDetector {
       rightShoulder: getPoint(LANDMARK_INDICES.rightShoulder),
       leftElbow: getPoint(LANDMARK_INDICES.leftElbow),
       rightElbow: getPoint(LANDMARK_INDICES.rightElbow),
-      leftHip: getPoint(LANDMARK_INDICES.leftHip),
-      rightHip: getPoint(LANDMARK_INDICES.rightHip),
     };
   }
 
@@ -117,19 +122,17 @@ export function drawLandmarks(
     landmarks.rightShoulder,
     landmarks.leftElbow,
     landmarks.rightElbow,
-    landmarks.leftHip,
-    landmarks.rightHip,
   ].map((p) => toCanvas(p, w, h));
 
   const connections: [number, number][] = [
     [0, 1],
     [0, 2],
+    [1, 2],
     [3, 4],
     [3, 5],
     [4, 6],
-    [3, 7],
-    [4, 8],
-    [7, 8],
+    [0, 3],
+    [0, 4],
   ];
 
   ctx.strokeStyle = "#6366f1";

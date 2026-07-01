@@ -7,10 +7,12 @@ import { Card } from "@/components/ui/Card";
 import { usePostureStore } from "@/store/postureStore";
 
 export function MonitorPage() {
-  const { videoRef, canvasRef, error, isActive } = useMonitoring();
+  const { stream, canvasRef, error, isActive } = useMonitoring();
   const showPreview = useSettingsStore((s) => s.showCameraPreview);
   const paused = useSettingsStore((s) => s.paused);
   const isPoseReady = usePostureStore((s) => s.isPoseReady);
+  const initStatus = usePostureStore((s) => s.initStatus);
+  const initError = usePostureStore((s) => s.initError);
   const fps = usePostureStore((s) => s.fps);
   const currentResult = usePostureStore((s) => s.currentResult);
 
@@ -20,7 +22,7 @@ export function MonitorPage() {
         <Card title="Live Monitor" subtitle="All processing happens locally on your device">
           {showPreview ? (
             <CameraPreview
-              videoRef={videoRef}
+              stream={stream}
               canvasRef={canvasRef}
               error={error}
               isActive={isActive}
@@ -37,9 +39,11 @@ export function MonitorPage() {
             <span>
               {paused
                 ? "Paused"
-                : isPoseReady
-                  ? "Detecting posture"
-                  : "Loading model..."}
+                : initError
+                  ? initError
+                  : isPoseReady
+                    ? "Detecting posture"
+                    : initStatus}
             </span>
             <span>{fps} FPS</span>
           </div>

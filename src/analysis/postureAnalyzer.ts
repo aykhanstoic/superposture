@@ -18,17 +18,19 @@ import { clamp, getSensitivityMultiplier, getStatusFromScore } from "@/utils";
 
 interface ThresholdConfig {
   forwardHeadRatio: number;
-  slouchAngle: number;
+  slouchHeadDropRatio: number;
+  slouchElbowForward: number;
   shoulderUnevenness: number;
   leanOffset: number;
   neckAngle: number;
 }
 
 const BASE_THRESHOLDS: ThresholdConfig = {
-  forwardHeadRatio: 0.18,
-  slouchAngle: 15,
+  forwardHeadRatio: 0.16,
+  slouchHeadDropRatio: 0.22,
+  slouchElbowForward: 0.12,
   shoulderUnevenness: 0.04,
-  leanOffset: 0.06,
+  leanOffset: 0.05,
   neckAngle: 35,
 };
 
@@ -36,7 +38,8 @@ function getThresholds(sensitivity: Sensitivity): ThresholdConfig {
   const m = getSensitivityMultiplier(sensitivity);
   return {
     forwardHeadRatio: BASE_THRESHOLDS.forwardHeadRatio / m,
-    slouchAngle: BASE_THRESHOLDS.slouchAngle / m,
+    slouchHeadDropRatio: BASE_THRESHOLDS.slouchHeadDropRatio / m,
+    slouchElbowForward: BASE_THRESHOLDS.slouchElbowForward / m,
     shoulderUnevenness: BASE_THRESHOLDS.shoulderUnevenness / m,
     leanOffset: BASE_THRESHOLDS.leanOffset / m,
     neckAngle: BASE_THRESHOLDS.neckAngle / m,
@@ -62,11 +65,22 @@ function createIssue(
   };
 }
 
-function torsoVerticalAngle(shoulderMid: Point2D, hipMid: Point2D): number {
-  const dx = shoulderMid.x - hipMid.x;
-  const dy = shoulderMid.y - hipMid.y;
-  const angleRad = Math.atan2(Math.abs(dx), Math.abs(dy));
-  return (angleRad * 180) / Math.PI;
+function headReference(landmarks: PoseLandmarks): Point2D {
+  const earsOk =
+    isLandmarkVisible(landmarks.leftEar) &&
+    isLandmarkVisible(landmarks.rightEar);
+  return earsOk
+    ? midpoint(landmarks.leftEar, landmarks.rightEar)
+    : landmarks.nose;
+}
+
+function neutralResult(): PostureResult {
+  return {
+    score: 50,
+    status: "fair",
+    issues: [],
+    timestamp: Date.now(),
+  };
 }
 
 export function analyzePosture(
@@ -76,41 +90,25 @@ export function analyzePosture(
   const thresholds = getThresholds(sensitivity);
   const issues: PostureIssue[] = [];
 
-  const requiredPoints = [
-    landmarks.nose,
-    landmarks.leftShoulder,
-    landmarks.rightShoulder,
-    landmarks.leftHip,
-    landmarks.rightHip,
-  ];
+  const shouldersVisible =
+    isLandmarkVisible(landmarks.leftShoulder) &&
+    isLandmarkVisible(landmarks.rightShoulder) &&
+    isLandmarkVisible(landmarks.nose);
 
-  const allVisible = requiredPoints.every((p) => isLandmarkVisible(p));
-  if (!allVisible) {
-    return {
-      score: 50,
-      status: "fair",
-      issues: [],
-      timestamp: Date.now(),
-    };
+  if (!shouldersVisible) {
+    return neutralResult();
   }
 
   const shoulderMid = midpoint(landmarks.leftShoulder, landmarks.rightShoulder);
-  const hipMid = midpoint(landmarks.leftHip, landmarks.rightHip);
-  const earMid = midpoint(landmarks.leftEar, landmarks.rightEar);
+  const headMid = headReference(landmarks);
   const shoulderWidth = distance(landmarks.leftShoulder, landmarks.rightShoulder);
-  const torsoHeight = distance(shoulderMid, hipMid);
 
-  if (shoulderWidth === 0 || torsoHeight === 0) {
-    return {
-      score: 50,
-      status: "fair",
-      issues: [],
-      timestamp: Date.now(),
-    };
+  if (shoulderWidth === 0) {
+    return neutralResult();
   }
 
-  // Forward head: horizontal offset of ears relative to shoulders
-  const forwardOffset = Math.abs(earMid.x - shoulderMid.x) / shoulderWidth;
+  // Forward head: head sits ahead of shoulders (laptop posture)
+  const forwardOffset = Math.abs(headMid.x - shoulderMid.x) / shoulderWidth;
   const forwardConfidence = clamp(
     (forwardOffset - thresholds.forwardHeadRatio * 0.5) /
       (thresholds.forwardHeadRatio * 0.5),
@@ -120,14 +118,33 @@ export function analyzePosture(
   const forwardIssue = createIssue("forward_head", forwardConfidence);
   if (forwardIssue) issues.push(forwardIssue);
 
-  // Slouching: torso deviates from vertical
-  const slouchAngle = torsoVerticalAngle(shoulderMid, hipMid);
-  const slouchConfidence = clamp(
-    (slouchAngle - thresholds.slouchAngle * 0.5) /
-      (thresholds.slouchAngle * 0.5),
+  // Slouching: head drops toward shoulders (no hips needed)
+  // In image space y grows downward — upright = nose well above shoulders.
+  const headClearance = (shoulderMid.y - landmarks.nose.y) / shoulderWidth;
+  const slouchFromHeadDrop = clamp(
+    (thresholds.slouchHeadDropRatio - headClearance) /
+      thresholds.slouchHeadDropRatio,
     0,
     1,
   );
+
+  // Slouching: elbows drift forward of shoulder line (rounded shoulders at desk)
+  let slouchFromElbows = 0;
+  const elbowsVisible =
+    isLandmarkVisible(landmarks.leftElbow) &&
+    isLandmarkVisible(landmarks.rightElbow);
+  if (elbowsVisible) {
+    const elbowMid = midpoint(landmarks.leftElbow, landmarks.rightElbow);
+    const elbowForward = Math.abs(elbowMid.x - shoulderMid.x) / shoulderWidth;
+    slouchFromElbows = clamp(
+      (elbowForward - thresholds.slouchElbowForward * 0.5) /
+        (thresholds.slouchElbowForward * 0.5),
+      0,
+      1,
+    );
+  }
+
+  const slouchConfidence = Math.max(slouchFromHeadDrop, slouchFromElbows);
   const slouchIssue = createIssue("slouching", slouchConfidence);
   if (slouchIssue) issues.push(slouchIssue);
 
@@ -144,8 +161,8 @@ export function analyzePosture(
   const unevenIssue = createIssue("uneven_shoulders", unevenConfidence);
   if (unevenIssue) issues.push(unevenIssue);
 
-  // Leaning left/right
-  const leanOffset = (shoulderMid.x - hipMid.x) / shoulderWidth;
+  // Leaning left/right: head offset from shoulder center (upper-body only)
+  const leanOffset = (headMid.x - shoulderMid.x) / shoulderWidth;
   if (leanOffset < -thresholds.leanOffset * 0.5) {
     const leanConfidence = clamp(
       Math.abs(leanOffset + thresholds.leanOffset * 0.5) /
@@ -166,12 +183,8 @@ export function analyzePosture(
     if (leanIssue) issues.push(leanIssue);
   }
 
-  // Excessive neck angle
-  const neckAngle = angleBetween(
-    landmarks.nose,
-    earMid,
-    shoulderMid,
-  );
+  // Excessive neck angle: nose–head–shoulder triangle
+  const neckAngle = angleBetween(landmarks.nose, headMid, shoulderMid);
   const neckConfidence = clamp(
     (neckAngle - thresholds.neckAngle) / 20,
     0,

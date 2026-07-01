@@ -81,7 +81,7 @@ src-tauri/
 
 ### Phase 2 — MediaPipe Pose Landmarker
 - [x] `@mediapipe/tasks-vision` Pose Landmarker (lite model)
-- [x] Track nose, ears, shoulders, elbows, hips
+- [x] Track nose, ears, shoulders, elbows (upper-body only — no hips)
 - [x] ~25 FPS inference with frame throttling
 - [x] Landmark overlay on camera canvas
 - [x] EMA smoothing to reduce jitter

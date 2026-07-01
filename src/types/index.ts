@@ -38,8 +38,6 @@ export interface PoseLandmarks {
   rightShoulder: Point2D;
   leftElbow: Point2D;
   rightElbow: Point2D;
-  leftHip: Point2D;
-  rightHip: Point2D;
 }
 
 export type Sensitivity = "low" | "medium" | "high";

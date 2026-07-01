@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 
 export interface CameraDevice {
@@ -6,14 +6,52 @@ export interface CameraDevice {
   label: string;
 }
 
+async function waitForVideoElement(
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  maxAttempts = 100,
+): Promise<HTMLVideoElement> {
+  for (let i = 0; i < maxAttempts; i++) {
+    if (videoRef.current) return videoRef.current;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error("Video element not available");
+}
+
+async function requestCameraStream(
+  cameraId: string,
+): Promise<MediaStream> {
+  const baseVideo = {
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    frameRate: { ideal: 30, max: 30 },
+  };
+
+  if (cameraId) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: { ...baseVideo, deviceId: { exact: cameraId } },
+        audio: false,
+      });
+    } catch {
+      console.warn("Saved camera unavailable, falling back to default camera.");
+      useSettingsStore.getState().setCameraId("");
+    }
+  }
+
+  return navigator.mediaDevices.getUserMedia({
+    video: baseVideo,
+    audio: false,
+  });
+}
+
 export function useCamera() {
   const cameraId = useSettingsStore((s) => s.cameraId);
-  const setCameraId = useSettingsStore((s) => s.setCameraId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [devices, setDevices] = useState<CameraDevice[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const enumerateDevices = useCallback(async () => {
     try {
@@ -25,13 +63,12 @@ export function useCamera() {
           label: d.label || `Camera ${i + 1}`,
         }));
       setDevices(cameras);
-      if (!cameraId && cameras.length > 0) {
-        setCameraId(cameras[0].deviceId);
-      }
+      return cameras;
     } catch {
       setError("Unable to list cameras.");
+      return [];
     }
-  }, [cameraId, setCameraId]);
+  }, []);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -41,6 +78,7 @@ export function useCamera() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    setStream(null);
     setIsActive(false);
   }, []);
 
@@ -49,38 +87,39 @@ export function useCamera() {
     stopCamera();
 
     try {
-      const constraints: MediaStreamConstraints = {
-        video: {
-          deviceId: cameraId ? { exact: cameraId } : undefined,
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 30, max: 30 },
-        },
-        audio: false,
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera API not available in this environment.");
       }
 
+      const mediaStream = await requestCameraStream(cameraId);
+      streamRef.current = mediaStream;
+
+      const video = await waitForVideoElement(videoRef);
+      video.srcObject = mediaStream;
+      video.muted = true;
+      video.playsInline = true;
+      await video.play();
+
+      setStream(mediaStream);
       setIsActive(true);
       await enumerateDevices();
-    } catch {
-      setError("Camera permission denied or unavailable.");
+    } catch (err) {
+      console.error("Camera start failed:", err);
+      const message =
+        err instanceof Error ? err.message : "Camera permission denied.";
+      setError(
+        message.includes("NotAllowed")
+          ? "Camera permission denied. Allow camera access in Windows Settings."
+          : "Could not start camera. Check permissions and try again.",
+      );
       setIsActive(false);
     }
   }, [cameraId, stopCamera, enumerateDevices]);
 
-  useEffect(() => {
-    return () => stopCamera();
-  }, [stopCamera]);
-
   return {
     videoRef,
+    streamRef,
+    stream,
     devices,
     error,
     isActive,
