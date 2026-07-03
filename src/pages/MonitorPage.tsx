@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { usePostureStore } from "@/store/postureStore";
 
 export function MonitorPage() {
-  const { stream, canvasRef, error, isActive } = useMonitoring();
+  const { canvasRef, error, isActive } = useMonitoring();
   const showPreview = useSettingsStore((s) => s.showCameraPreview);
   const paused = useSettingsStore((s) => s.paused);
   const isPoseReady = usePostureStore((s) => s.isPoseReady);
@@ -22,7 +22,6 @@ export function MonitorPage() {
         <Card title="Live Monitor" subtitle="All processing happens locally on your device">
           {showPreview ? (
             <CameraPreview
-              stream={stream}
               canvasRef={canvasRef}
               error={error}
               isActive={isActive}

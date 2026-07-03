@@ -41,7 +41,7 @@ export function MonitoringProvider({ children }: { children: ReactNode }) {
       {/* Primary capture element — always mounted for MediaPipe */}
       <video
         ref={camera.videoRef}
-        className="pointer-events-none fixed -left-[9999px] top-0 h-[480px] w-[640px] opacity-0"
+        className="pointer-events-none fixed -left-[9999px] top-0 h-[360px] w-[480px] opacity-0"
         playsInline
         muted
         autoPlay

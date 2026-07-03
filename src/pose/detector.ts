@@ -1,102 +1,63 @@
-import { PoseLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 import type { PoseLandmarks, Point2D } from "@/types";
 
-const POSE_LANDMARKER_MODEL =
-  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task";
+function toVideoCoords(point: Point2D, videoWidth: number, videoHeight: number) {
+  return { x: point.x * videoWidth, y: point.y * videoHeight };
+}
 
-const WASM_BASE =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm";
-
-const LANDMARK_INDICES = {
-  nose: 0,
-  leftEar: 7,
-  rightEar: 8,
-  leftShoulder: 11,
-  rightShoulder: 12,
-  leftElbow: 13,
-  rightElbow: 14,
-} as const;
-
-export class PoseDetector {
-  private landmarker: PoseLandmarker | null = null;
-  private lastDetectionTime = 0;
-  private readonly targetFps = 25;
-  private readonly frameInterval = 1000 / this.targetFps;
-
-  async initialize(): Promise<void> {
-    if (this.landmarker) return;
-
-    const vision = await FilesetResolver.forVisionTasks(WASM_BASE);
-    const options = {
-      baseOptions: {
-        modelAssetPath: POSE_LANDMARKER_MODEL,
-        delegate: "GPU" as const,
-      },
-      runningMode: "VIDEO" as const,
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    };
-
-    try {
-      this.landmarker = await PoseLandmarker.createFromOptions(vision, options);
-    } catch {
-      this.landmarker = await PoseLandmarker.createFromOptions(vision, {
-        ...options,
-        baseOptions: { ...options.baseOptions, delegate: "CPU" },
-      });
-    }
-  }
-
-  detect(
-    video: HTMLVideoElement,
-    timestamp: number,
-  ): PoseLandmarks | null {
-    if (!this.landmarker || video.readyState < 2) return null;
-
-    const now = performance.now();
-    if (now - this.lastDetectionTime < this.frameInterval) return null;
-    this.lastDetectionTime = now;
-
-    const result = this.landmarker.detectForVideo(video, timestamp);
-    if (!result.landmarks.length) return null;
-
-    const landmarks = result.landmarks[0];
-    const worldLandmarks = result.worldLandmarks[0];
-
-    const getPoint = (index: number) => {
-      const lm = landmarks[index];
-      const wlm = worldLandmarks?.[index];
-      return {
-        x: lm.x,
-        y: lm.y,
-        visibility: wlm ? Math.min(1, Math.abs(wlm.z) < 1 ? 0.9 : 0.7) : 0.8,
-      };
-    };
-
-    return {
-      nose: getPoint(LANDMARK_INDICES.nose),
-      leftEar: getPoint(LANDMARK_INDICES.leftEar),
-      rightEar: getPoint(LANDMARK_INDICES.rightEar),
-      leftShoulder: getPoint(LANDMARK_INDICES.leftShoulder),
-      rightShoulder: getPoint(LANDMARK_INDICES.rightShoulder),
-      leftElbow: getPoint(LANDMARK_INDICES.leftElbow),
-      rightElbow: getPoint(LANDMARK_INDICES.rightElbow),
-    };
-  }
-
-  dispose(): void {
-    this.landmarker?.close();
-    this.landmarker = null;
+function ensureCanvasSize(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+): void {
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
   }
 }
 
-function toCanvas(point: Point2D, width: number, height: number) {
-  return { x: point.x * width, y: point.y * height };
+function drawTwoLineOverlay(
+  ctx: CanvasRenderingContext2D,
+  landmarks: PoseLandmarks,
+  videoWidth: number,
+  videoHeight: number,
+): void {
+  const ls = toVideoCoords(landmarks.leftShoulder, videoWidth, videoHeight);
+  const rs = toVideoCoords(landmarks.rightShoulder, videoWidth, videoHeight);
+  const le = toVideoCoords(landmarks.leftEar, videoWidth, videoHeight);
+  const re = toVideoCoords(landmarks.rightEar, videoWidth, videoHeight);
+  const leye = toVideoCoords(landmarks.leftEye, videoWidth, videoHeight);
+  const reye = toVideoCoords(landmarks.rightEye, videoWidth, videoHeight);
+  const nose = toVideoCoords(landmarks.nose, videoWidth, videoHeight);
+
+  ctx.strokeStyle = "#22c55e";
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  // Shoulder line
+  ctx.beginPath();
+  ctx.moveTo(ls.x, ls.y);
+  ctx.lineTo(rs.x, rs.y);
+  ctx.stroke();
+
+  // Face polyline: leftEar → leftEye → nose → rightEye → rightEar
+  ctx.beginPath();
+  ctx.moveTo(le.x, le.y);
+  ctx.lineTo(leye.x, leye.y);
+  ctx.lineTo(nose.x, nose.y);
+  ctx.lineTo(reye.x, reye.y);
+  ctx.lineTo(re.x, re.y);
+  ctx.stroke();
+
+  ctx.fillStyle = "#4ade80";
+  for (const point of [ls, rs, le, leye, nose, reye, re]) {
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
-export function drawLandmarks(
+export function drawPreview(
   canvas: HTMLCanvasElement,
   video: HTMLVideoElement,
   landmarks: PoseLandmarks | null,
@@ -104,54 +65,21 @@ export function drawLandmarks(
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ensureCanvasSize(canvas, w, h);
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(video, 0, 0, w, h);
 
-  if (!landmarks) return;
-
-  const w = canvas.width;
-  const h = canvas.height;
-
-  const points = [
-    landmarks.nose,
-    landmarks.leftEar,
-    landmarks.rightEar,
-    landmarks.leftShoulder,
-    landmarks.rightShoulder,
-    landmarks.leftElbow,
-    landmarks.rightElbow,
-  ].map((p) => toCanvas(p, w, h));
-
-  const connections: [number, number][] = [
-    [0, 1],
-    [0, 2],
-    [1, 2],
-    [3, 4],
-    [3, 5],
-    [4, 6],
-    [0, 3],
-    [0, 4],
-  ];
-
-  ctx.strokeStyle = "#6366f1";
-  ctx.lineWidth = 2;
-  for (const [a, b] of connections) {
-    ctx.beginPath();
-    ctx.moveTo(points[a].x, points[a].y);
-    ctx.lineTo(points[b].x, points[b].y);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "#a5b4fc";
-  for (const point of points) {
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+  if (landmarks) {
+    drawTwoLineOverlay(ctx, landmarks, w, h);
   }
 }
 
-export const TRACKED_LANDMARK_KEYS = Object.keys(
-  LANDMARK_INDICES,
-) as (keyof PoseLandmarks)[];
+export function clearCanvas(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}

@@ -50,8 +50,11 @@ export function SettingsPage() {
           checked={settings.showCameraPreview}
           onChange={settings.setShowCameraPreview}
         />
+        <p className="text-xs text-white/40 pb-1">
+          Alerts when your score drops below 50 for about 2 seconds.
+        </p>
         <Slider
-          label="Reminder interval"
+          label="Repeat reminder cooldown"
           value={settings.reminderIntervalMinutes}
           min={1}
           max={15}

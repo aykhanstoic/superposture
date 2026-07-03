@@ -1,6 +1,6 @@
 import type { Point2D, PoseLandmarks } from "@/types";
 
-const SMOOTHING_ALPHA = 0.35;
+const SMOOTHING_ALPHA = 0.2;
 
 export class LandmarkSmoother {
   private previous: Partial<PoseLandmarks> = {};

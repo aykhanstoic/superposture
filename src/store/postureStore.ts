@@ -14,6 +14,7 @@ interface PostureState {
   todayReminderCount: number;
   poorPostureSince: number | null;
   canSendReminder: boolean;
+  postureAlertRequested: boolean;
 
   setCurrentResult: (result: PostureResult | null) => void;
   setIsMonitoring: (monitoring: boolean) => void;
@@ -27,6 +28,8 @@ interface PostureState {
   incrementReminderCount: () => void;
   setPoorPostureSince: (timestamp: number | null) => void;
   setCanSendReminder: (can: boolean) => void;
+  requestPostureAlert: () => void;
+  clearPostureAlert: () => void;
   resetSessionStats: () => void;
 }
 
@@ -43,6 +46,7 @@ export const usePostureStore = create<PostureState>((set) => ({
   todayReminderCount: 0,
   poorPostureSince: null,
   canSendReminder: true,
+  postureAlertRequested: false,
 
   setCurrentResult: (currentResult) => set({ currentResult }),
   setIsMonitoring: (isMonitoring) => set({ isMonitoring }),
@@ -61,6 +65,8 @@ export const usePostureStore = create<PostureState>((set) => ({
     set((s) => ({ todayReminderCount: s.todayReminderCount + 1 })),
   setPoorPostureSince: (poorPostureSince) => set({ poorPostureSince }),
   setCanSendReminder: (canSendReminder) => set({ canSendReminder }),
+  requestPostureAlert: () => set({ postureAlertRequested: true }),
+  clearPostureAlert: () => set({ postureAlertRequested: false }),
   resetSessionStats: () =>
     set({
       monitoringSeconds: 0,

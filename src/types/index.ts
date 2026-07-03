@@ -5,8 +5,7 @@ export type IssueType =
   | "slouching"
   | "uneven_shoulders"
   | "leaning_left"
-  | "leaning_right"
-  | "excessive_neck_angle";
+  | "leaning_right";
 
 export type IssueSeverity = "low" | "medium" | "high";
 
@@ -32,12 +31,12 @@ export interface Point2D {
 
 export interface PoseLandmarks {
   nose: Point2D;
+  leftEye: Point2D;
+  rightEye: Point2D;
   leftEar: Point2D;
   rightEar: Point2D;
   leftShoulder: Point2D;
   rightShoulder: Point2D;
-  leftElbow: Point2D;
-  rightElbow: Point2D;
 }
 
 export type Sensitivity = "low" | "medium" | "high";
@@ -87,11 +86,10 @@ export interface DashboardData {
 
 export const ISSUE_LABELS: Record<IssueType, string> = {
   forward_head: "Forward Head",
-  slouching: "Rounded Shoulders",
+  slouching: "Slouching",
   uneven_shoulders: "Uneven Shoulders",
   leaning_left: "Leaning Left",
   leaning_right: "Leaning Right",
-  excessive_neck_angle: "Excessive Neck Angle",
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -102,5 +100,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   darkMode: true,
   notificationSounds: true,
   paused: false,
-  showCameraPreview: true,
+  showCameraPreview: false,
 };

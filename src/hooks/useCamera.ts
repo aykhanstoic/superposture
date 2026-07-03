@@ -21,9 +21,9 @@ async function requestCameraStream(
   cameraId: string,
 ): Promise<MediaStream> {
   const baseVideo = {
-    width: { ideal: 640 },
-    height: { ideal: 480 },
-    frameRate: { ideal: 30, max: 30 },
+    width: { ideal: 480 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 15, max: 15 },
   };
 
   if (cameraId) {

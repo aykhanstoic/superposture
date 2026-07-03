@@ -9,14 +9,27 @@ import {
   updateDailyStats,
 } from "@/database/db";
 import { useCamera } from "@/hooks/useCamera";
-import { PoseDetector, drawLandmarks } from "@/pose/detector";
+import { clearCanvas, drawPreview } from "@/pose/detector";
+import {
+  computeTier,
+  createSchedulerState,
+  tierIntervalMs,
+  updateSchedulerScore,
+} from "@/pose/inferenceScheduler";
+import { PoseBridge } from "@/pose/poseBridge";
 import { LandmarkSmoother } from "@/pose/smoothing";
+import { ScoreSmoother } from "@/pose/scoreSmoothing";
 import { showPostureReminder } from "@/services/notifications";
 import { usePostureStore } from "@/store/postureStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import type { PostureResult } from "@/types";
 import { isTauri } from "@/utils";
 
 const SAMPLE_INTERVAL_MS = 5000;
+const UI_UPDATE_INTERVAL_MS = 125;
+const POOR_SCORE_THRESHOLD = 50;
+const RECOVER_SCORE_THRESHOLD = 55;
+const POOR_SCORE_DEBOUNCE_MS = 2000;
 
 function isVideoReady(video: HTMLVideoElement): boolean {
   return (
@@ -37,43 +50,65 @@ export function usePostureMonitor(
   const cameraRef = useRef(camera);
   cameraRef.current = camera;
 
-  const detectorRef = useRef<PoseDetector | null>(null);
+  const bridgeRef = useRef<PoseBridge | null>(null);
   const smootherRef = useRef(new LandmarkSmoother());
-  const rafRef = useRef(0);
+  const scoreSmootherRef = useRef(new ScoreSmoother());
+  const monitorIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSampleRef = useRef(0);
+  const lastUiPushRef = useRef(0);
   const frameCountRef = useRef(0);
   const scoreAccumulatorRef = useRef<number[]>([]);
   const sessionReminderRef = useRef(0);
   const initGenerationRef = useRef(0);
+  const detectingRef = useRef(false);
+  const schedulerRef = useRef(createSchedulerState());
+  const currentIntervalMsRef = useRef(tierIntervalMs("normal"));
 
-  const checkReminder = useCallback(() => {
-    const { currentResult, poorPostureSince, canSendReminder } =
-      usePostureStore.getState();
+  const resultRef = useRef<PostureResult | null>(null);
+  const poorPostureSinceRef = useRef<number | null>(null);
+  const lastReminderAtRef = useRef(0);
+  const canSendReminderRef = useRef(true);
+
+  const checkReminder = useCallback((result: PostureResult) => {
     const { reminderIntervalMinutes, notificationSounds } =
       useSettingsStore.getState();
-    if (!currentResult) return;
 
     const now = Date.now();
-    const isPoor = currentResult.status === "poor";
+    const isPoor = result.score < POOR_SCORE_THRESHOLD;
 
     if (isPoor) {
-      if (poorPostureSince === null) {
+      if (poorPostureSinceRef.current === null) {
+        poorPostureSinceRef.current = now;
         usePostureStore.getState().setPoorPostureSince(now);
-      } else if (
-        canSendReminder &&
-        now - poorPostureSince >= reminderIntervalMinutes * 60 * 1000
-      ) {
-        showPostureReminder(notificationSounds);
+      }
+
+      const sustainedPoor =
+        now - poorPostureSinceRef.current >= POOR_SCORE_DEBOUNCE_MS;
+      const cooldownMs = reminderIntervalMinutes * 60 * 1000;
+      const cooldownOk =
+        lastReminderAtRef.current === 0 ||
+        now - lastReminderAtRef.current >= cooldownMs;
+
+      if (sustainedPoor && cooldownOk) {
+        showPostureReminder(notificationSounds, result);
         usePostureStore.getState().incrementReminderCount();
         sessionReminderRef.current += 1;
-        usePostureStore.getState().setCanSendReminder(false);
+        lastReminderAtRef.current = now;
       }
-    } else if (
-      currentResult.status === "good" ||
-      currentResult.status === "excellent"
-    ) {
+    } else if (result.score >= RECOVER_SCORE_THRESHOLD) {
+      poorPostureSinceRef.current = null;
+      lastReminderAtRef.current = 0;
+      canSendReminderRef.current = true;
       usePostureStore.getState().setPoorPostureSince(null);
       usePostureStore.getState().setCanSendReminder(true);
+    }
+  }, []);
+
+  const pushUiUpdate = useCallback((result: PostureResult) => {
+    const now = performance.now();
+    if (now - lastUiPushRef.current >= UI_UPDATE_INTERVAL_MS) {
+      lastUiPushRef.current = now;
+      usePostureStore.getState().setCurrentResult(result);
     }
   }, []);
 
@@ -83,14 +118,94 @@ export function usePostureMonitor(
     let secondsInterval: ReturnType<typeof setInterval> | undefined;
     let fpsInterval: ReturnType<typeof setInterval> | undefined;
 
-    const isCurrent = () => mounted && initGenerationRef.current === generation;
+    const isCurrent = () =>
+      mounted && initGenerationRef.current === generation;
+
+    const clearMonitorInterval = () => {
+      if (monitorIntervalRef.current) {
+        clearInterval(monitorIntervalRef.current);
+        monitorIntervalRef.current = null;
+      }
+    };
+
+    const scheduleMonitor = (intervalMs: number) => {
+      if (intervalMs === currentIntervalMsRef.current && monitorIntervalRef.current) {
+        return;
+      }
+      currentIntervalMsRef.current = intervalMs;
+      clearMonitorInterval();
+      monitorIntervalRef.current = setInterval(tick, intervalMs);
+    };
+
+    const tick = async () => {
+      if (!isCurrent() || detectingRef.current) return;
+
+      const isPaused = useSettingsStore.getState().paused;
+      if (isPaused) return;
+
+      const video = cameraRef.current.videoRef.current;
+      const canvas = canvasRef.current;
+      const bridge = bridgeRef.current;
+
+      if (!video || !bridge || !isVideoReady(video)) return;
+
+      detectingRef.current = true;
+      try {
+        const raw = bridge.detect(video);
+        const now = performance.now();
+
+        if (raw) {
+          frameCountRef.current += 1;
+          const smoothed = smootherRef.current.smooth(raw);
+          const rawResult = analyzePosture(
+            smoothed,
+            useSettingsStore.getState().sensitivity,
+          );
+          const result = scoreSmootherRef.current.smooth(rawResult);
+
+          resultRef.current = result;
+          checkReminder(result);
+          pushUiUpdate(result);
+
+          usePostureStore
+            .getState()
+            .updateGoodStreak(
+              result.status === "good" || result.status === "excellent",
+            );
+
+          const preview = useSettingsStore.getState().showCameraPreview;
+          if (preview && canvas) {
+            drawPreview(canvas, video, smoothed);
+          } else if (canvas) {
+            clearCanvas(canvas);
+          }
+
+          const sid = usePostureStore.getState().sessionId;
+          if (sid && now - lastSampleRef.current >= SAMPLE_INTERVAL_MS) {
+            lastSampleRef.current = now;
+            scoreAccumulatorRef.current.push(result.score);
+            saveScoreSample(sid, result.score);
+          }
+
+          updateSchedulerScore(schedulerRef.current, result.score, now);
+          const tier = computeTier(schedulerRef.current, result, now);
+          schedulerRef.current.tier = tier;
+          scheduleMonitor(tierIntervalMs(tier));
+        } else {
+          const tier = computeTier(schedulerRef.current, null, now);
+          schedulerRef.current.tier = tier;
+          scheduleMonitor(tierIntervalMs(tier));
+        }
+      } finally {
+        detectingRef.current = false;
+      }
+    };
 
     async function init() {
       usePostureStore.getState().setInitStatus("Starting camera...");
       usePostureStore.getState().setInitError(null);
       usePostureStore.getState().setIsPoseReady(false);
 
-      // Camera first — gives immediate feedback and unblocks preview.
       await cameraRef.current.startCamera();
       if (!isCurrent()) return;
 
@@ -100,15 +215,17 @@ export function usePostureMonitor(
         console.warn("Database init failed (non-fatal):", err);
       });
 
-      let detector: PoseDetector;
+      let bridge: PoseBridge;
       try {
-        detector = new PoseDetector();
-        await detector.initialize();
+        bridge = new PoseBridge();
+        await bridge.initialize();
       } catch (err) {
         console.error("Pose model init failed:", err);
         if (isCurrent()) {
+          const message =
+            err instanceof Error ? err.message : "Unknown error";
           usePostureStore.getState().setInitError(
-            "Could not load pose model. Check your internet connection and restart the app.",
+            `Could not load pose model: ${message}`,
           );
           usePostureStore.getState().setInitStatus("Model failed to load");
         }
@@ -116,12 +233,18 @@ export function usePostureMonitor(
       }
 
       if (!isCurrent()) {
-        detector.dispose();
+        bridge.dispose();
         return;
       }
 
-      detectorRef.current = detector;
+      bridgeRef.current = bridge;
       smootherRef.current.reset();
+      scoreSmootherRef.current.reset();
+      schedulerRef.current = createSchedulerState();
+      resultRef.current = null;
+      poorPostureSinceRef.current = null;
+      canSendReminderRef.current = true;
+
       usePostureStore.getState().setIsPoseReady(true);
       usePostureStore.getState().setInitStatus("Detecting posture");
 
@@ -134,53 +257,7 @@ export function usePostureMonitor(
       scoreAccumulatorRef.current = [];
       sessionReminderRef.current = 0;
 
-      const tick = (timestamp: number) => {
-        if (!isCurrent()) return;
-
-        const video = cameraRef.current.videoRef.current;
-        const canvas = canvasRef.current;
-        const detectorInstance = detectorRef.current;
-        const isPaused = useSettingsStore.getState().paused;
-
-        if (video && detectorInstance && isVideoReady(video) && !isPaused) {
-          const raw = detectorInstance.detect(video, timestamp);
-          if (raw) {
-            frameCountRef.current += 1;
-            const smoothed = smootherRef.current.smooth(raw);
-            const result = analyzePosture(
-              smoothed,
-              useSettingsStore.getState().sensitivity,
-            );
-            usePostureStore.getState().setCurrentResult(result);
-            checkReminder();
-            usePostureStore
-              .getState()
-              .updateGoodStreak(
-                result.status === "good" || result.status === "excellent",
-              );
-
-            const preview = useSettingsStore.getState().showCameraPreview;
-            if (preview && canvas) {
-              drawLandmarks(canvas, video, smoothed);
-            } else if (canvas) {
-              const ctx = canvas.getContext("2d");
-              ctx?.clearRect(0, 0, canvas.width, canvas.height);
-            }
-
-            const now = performance.now();
-            const sid = usePostureStore.getState().sessionId;
-            if (sid && now - lastSampleRef.current >= SAMPLE_INTERVAL_MS) {
-              lastSampleRef.current = now;
-              scoreAccumulatorRef.current.push(result.score);
-              saveScoreSample(sid, result.score);
-            }
-          }
-        }
-
-        rafRef.current = requestAnimationFrame(tick);
-      };
-
-      rafRef.current = requestAnimationFrame(tick);
+      scheduleMonitor(tierIntervalMs("normal"));
 
       fpsInterval = setInterval(() => {
         usePostureStore.getState().setFps(frameCountRef.current);
@@ -199,11 +276,11 @@ export function usePostureMonitor(
     return () => {
       mounted = false;
       initGenerationRef.current += 1;
-      cancelAnimationFrame(rafRef.current);
+      clearMonitorInterval();
       if (secondsInterval) clearInterval(secondsInterval);
       if (fpsInterval) clearInterval(fpsInterval);
-      detectorRef.current?.dispose();
-      detectorRef.current = null;
+      bridgeRef.current?.dispose();
+      bridgeRef.current = null;
       cameraRef.current.stopCamera();
       usePostureStore.getState().setIsMonitoring(false);
       usePostureStore.getState().setIsPoseReady(false);

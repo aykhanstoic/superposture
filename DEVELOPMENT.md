@@ -81,17 +81,16 @@ src-tauri/
 
 ### Phase 2 — MediaPipe Pose Landmarker
 - [x] `@mediapipe/tasks-vision` Pose Landmarker (lite model)
-- [x] Track nose, ears, shoulders, elbows (upper-body only — no hips)
-- [x] ~25 FPS inference with frame throttling
-- [x] Landmark overlay on camera canvas
-- [x] EMA smoothing to reduce jitter
+- [x] Track nose, eyes, ears, shoulders (7 landmarks — two-line model)
+- [x] Adaptive inference FPS (10/15/20)
+- [x] Two-line overlay: shoulder line + ear-eye-nose polyline
+- [x] EMA landmark smoothing
 
-### Phase 3 — Posture analysis
-- [x] Forward head posture detection
-- [x] Slouching / rounded shoulders
-- [x] Uneven shoulders
+### Phase 3 — Posture analysis (two-line geometry)
+- [x] Forward head (nose vs shoulder center)
+- [x] Slouching (head drop toward shoulders)
+- [x] Uneven shoulders (shoulder line tilt + ear height)
 - [x] Leaning left / right
-- [x] Excessive neck angle
 - [x] Confidence scores per issue
 - [x] Overall score 0–100 with status tiers
 
@@ -121,8 +120,12 @@ src-tauri/
 - [x] Linear-inspired UI (rounded cards, animations, system fonts)
 - [x] Settings page (sensitivity, reminders, camera, theme)
 - [x] History page (sessions + daily records)
-- [ ] GPU delegate fallback to CPU if WebGL unavailable
-- [ ] Bundle MediaPipe WASM locally for fully offline install
+- [x] GPU delegate fallback to CPU if WebGL unavailable (worker init)
+- [x] Bundle MediaPipe WASM locally for fully offline install
+- [x] Adaptive inference FPS for low CPU in tray mode
+- [x] Main-thread MediaPipe inference (local WASM)
+- [x] setInterval + Web Lock keep-alive for tray background monitoring
+- [x] Full-frame 320×320 downscale (480×360 camera capture)
 
 ---
 
@@ -149,24 +152,29 @@ Settings persist in browser `localStorage` (Zustand persist). Posture history pe
 | Launch on startup | Off | OS autostart |
 | Dark mode | On | UI theme |
 | Notification sounds | On | Native notification audio |
-| Camera preview | On | Show/hide video feed |
+| Camera preview | Off | Show/hide video feed on Monitor page |
 
 ---
 
 ## Architecture Notes
 
-- **MonitoringProvider** wraps the app and keeps camera + MediaPipe running on every page and when the window is minimized to tray.
-- A hidden off-screen `<video>` element feeds MediaPipe; the visible preview mirrors the same `MediaStream`.
+- **Primary use case:** App runs in the **system tray** while you work in other apps. When posture stays poor for the reminder interval, a native notification pop-up fires and the window is brought forward.
+- **MonitoringProvider** wraps the app and keeps camera + pose model running on every page and when the window is minimized to tray.
+- A hidden off-screen `<video>` element feeds inference; preview (when enabled) draws to a single canvas — no dual video decode.
 - Closing the window hides to tray — the app keeps running until you choose **Quit** from the tray menu.
 
 ```
-Webcam → MediaPipe (local WASM) → Posture Analysis (JS) → UI + SQLite
+Webcam 480×360 → full-frame downscale 320×320 → MediaPipe (local WASM)
+       → two-line geometry analysis → score EMA → Notification + UI
                 ↓
-         No network calls for frames
+         No network calls for frames (fully offline after install)
 ```
 
-- Pose model downloaded once from Google CDN on first run (cacheable)
-- For fully offline: copy WASM + model into `public/` and update paths in `src/pose/detector.ts`
+**Two-line model:** Shoulder line (left ↔ right shoulder) + face polyline (leftEar → leftEye → nose → rightEye → rightEar). Scoring uses nose position relative to the shoulder line, normalized by shoulder width.
+
+- Pose model and WASM bundled in `public/mediapipe/` — no CDN required
+- Inference uses **adaptive FPS**: ~10 fps when posture is stable, ~15 fps normally, ~20 fps when degrading
+- Monitoring loop uses **setInterval** (not rAF) so tray-hidden operation is not throttled
 
 ---
 
@@ -200,16 +208,19 @@ npm run tauri:dev
 - Install from [rustup.rs](https://rustup.rs) and restart terminal
 
 **MediaPipe model fails to load**
-- Check internet on first launch (model download)
-- Verify CSP in `src-tauri/tauri.conf.json` allows `storage.googleapis.com`
+- Verify `public/mediapipe/` contains WASM files and `pose_landmarker_lite.task`
+- Re-run `npm install` then copy assets from `node_modules/@mediapipe/tasks-vision/wasm/` to `public/mediapipe/wasm/`
+
+**Tray monitoring stops when window hidden**
+- Should not happen — app uses setInterval + Web Lock keep-alive. Restart the app if monitoring pauses after long tray time.
 
 **Tray icon missing**
 - Run `npm run tauri icon public/postureguard.svg`
 
 **High CPU usage**
-- Hide camera preview (Settings)
+- Hide camera preview (Settings) — default is off
 - Pause monitoring when not at desk
-- Lower sensitivity reduces re-analysis overhead
+- Stable good posture automatically drops inference to ~10 fps
 
 ---
 
