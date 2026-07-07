@@ -53,6 +53,10 @@ jobs:
             librsvg2-dev \
             patchelf
 
+      - name: Install macOS Rust targets
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
       - name: Install frontend dependencies
         run: npm ci
 
@@ -75,7 +79,7 @@ jobs:
         with:
           name: PostureGuard-macOS
           if-no-files-found: error
-          path: src-tauri/target/release/bundle/dmg/*.dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
 
       - name: Upload Linux bundles
         if: matrix.platform == 'ubuntu-22.04'
