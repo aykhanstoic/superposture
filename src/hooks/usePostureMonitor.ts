@@ -67,7 +67,6 @@ export function usePostureMonitor(
   const resultRef = useRef<PostureResult | null>(null);
   const poorPostureSinceRef = useRef<number | null>(null);
   const lastReminderAtRef = useRef(0);
-  const canSendReminderRef = useRef(true);
 
   const checkReminder = useCallback((result: PostureResult) => {
     const { reminderIntervalMinutes, notificationSounds } =
@@ -98,9 +97,7 @@ export function usePostureMonitor(
     } else if (result.score >= RECOVER_SCORE_THRESHOLD) {
       poorPostureSinceRef.current = null;
       lastReminderAtRef.current = 0;
-      canSendReminderRef.current = true;
       usePostureStore.getState().setPoorPostureSince(null);
-      usePostureStore.getState().setCanSendReminder(true);
     }
   }, []);
 
@@ -254,7 +251,6 @@ export function usePostureMonitor(
       schedulerRef.current = createSchedulerState();
       resultRef.current = null;
       poorPostureSinceRef.current = null;
-      canSendReminderRef.current = true;
 
       usePostureStore.getState().setIsPoseReady(true);
       usePostureStore.getState().setInitStatus("Detecting posture");

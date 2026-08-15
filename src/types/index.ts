@@ -46,7 +46,6 @@ export interface AppSettings {
   sensitivity: Sensitivity;
   cameraId: string;
   launchOnStartup: boolean;
-  darkMode: boolean;
   notificationSounds: boolean;
   paused: boolean;
   showCameraPreview: boolean;
@@ -99,7 +98,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   sensitivity: "medium",
   cameraId: "",
   launchOnStartup: false,
-  darkMode: true,
   notificationSounds: true,
   paused: false,
   showCameraPreview: false,

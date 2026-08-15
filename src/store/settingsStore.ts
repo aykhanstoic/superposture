@@ -8,7 +8,6 @@ interface SettingsState extends AppSettings {
   setSensitivity: (sensitivity: AppSettings["sensitivity"]) => void;
   setCameraId: (id: string) => void;
   setLaunchOnStartup: (enabled: boolean) => void;
-  setDarkMode: (enabled: boolean) => void;
   setNotificationSounds: (enabled: boolean) => void;
   setPaused: (paused: boolean) => void;
   togglePaused: () => void;
@@ -24,7 +23,6 @@ export const useSettingsStore = create<SettingsState>()(
       setSensitivity: (sensitivity) => set({ sensitivity }),
       setCameraId: (cameraId) => set({ cameraId }),
       setLaunchOnStartup: (launchOnStartup) => set({ launchOnStartup }),
-      setDarkMode: (darkMode) => set({ darkMode }),
       setNotificationSounds: (notificationSounds) =>
         set({ notificationSounds }),
       setPaused: (paused) => set({ paused }),
