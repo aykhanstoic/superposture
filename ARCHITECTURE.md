@@ -40,8 +40,8 @@ flowchart LR
 | Component | Status | Stack | Hosting |
 |---|---|---|---|
 | Desktop app | **Built** (this repo) | Tauri 2, React 19, MediaPipe | User's machine; installers on GitHub Releases |
-| Website | Planned | Static site (Astro or plain HTML) | Cloudflare Pages / Vercel |
-| License backend | Planned | Serverless functions + small KV/SQL store | Same repo/platform as website |
+| Website | Scaffolded (`postureguard-site`) | Static HTML, no build step | Vercel |
+| License backend | Scaffolded (`postureguard-site`) | Vercel serverless functions + Upstash Redis (REST, no SDK) | Vercel |
 | Payments | Planned | Stripe Checkout (Payment Link) + Stripe Tax | Stripe |
 
 Two repos, because the app and the website share no code and have different release
@@ -226,12 +226,12 @@ sequenceDiagram
     Note over S,B: charge.refunded webhook → revoke key
 ```
 
-**Backend scope** — deliberately tiny (~200 lines, serverless + KV/small SQL):
+**Backend scope** — deliberately tiny (~200 lines, Vercel functions + Upstash Redis):
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /webhooks/stripe` | Verify signature; on purchase, generate + store + email key; on refund, revoke |
-| `POST /validate` | Look up key, mark activated, return signed OK |
+| `POST /api/webhooks/stripe` | Verify signature; on purchase, generate + store + email key; on refund, revoke |
+| `POST /api/validate` | Look up key, mark activated, return OK |
 
 **API contract** — the single interface shared between the two repos. Both the app
 (`superposture`) and the backend (`postureguard-site`) implement exactly this shape:
