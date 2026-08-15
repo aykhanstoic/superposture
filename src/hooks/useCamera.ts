@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
+import { CAMERA_OFF_VALUE } from "@/types";
 
 export interface CameraDevice {
   deviceId: string;
@@ -19,12 +20,16 @@ async function waitForVideoElement(
 
 async function requestCameraStream(
   cameraId: string,
-): Promise<MediaStream> {
+): Promise<MediaStream | null> {
   const baseVideo = {
     width: { ideal: 480 },
     height: { ideal: 360 },
     frameRate: { ideal: 15, max: 15 },
   };
+
+  if (cameraId === CAMERA_OFF_VALUE) {
+    return null;
+  }
 
   if (cameraId) {
     try {
@@ -92,6 +97,14 @@ export function useCamera() {
       }
 
       const mediaStream = await requestCameraStream(cameraId);
+
+      if (!mediaStream) {
+        setStream(null);
+        setIsActive(false);
+        await enumerateDevices();
+        return;
+      }
+
       streamRef.current = mediaStream;
 
       const video = await waitForVideoElement(videoRef);

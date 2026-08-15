@@ -3,13 +3,13 @@ import { useSettingsStore } from "@/store/settingsStore";
 
 export function useTheme() {
   const darkMode = useSettingsStore((s) => s.darkMode);
+  const setDarkMode = useSettingsStore((s) => s.setDarkMode);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
+    root.classList.add("dark");
+    if (!darkMode) {
+      setDarkMode(true);
     }
-  }, [darkMode]);
+  }, [darkMode, setDarkMode]);
 }

@@ -22,7 +22,7 @@ import { ScoreSmoother } from "@/pose/scoreSmoothing";
 import { showPostureReminder } from "@/services/notifications";
 import { usePostureStore } from "@/store/postureStore";
 import { useSettingsStore } from "@/store/settingsStore";
-import type { PostureResult } from "@/types";
+import { CAMERA_OFF_VALUE, type PostureResult } from "@/types";
 import { isTauri } from "@/utils";
 
 const SAMPLE_INTERVAL_MS = 5000;
@@ -202,6 +202,17 @@ export function usePostureMonitor(
     };
 
     async function init() {
+      if (cameraId === CAMERA_OFF_VALUE) {
+        usePostureStore.getState().setInitStatus("Webcam is off");
+        usePostureStore.getState().setInitError(null);
+        usePostureStore.getState().setIsPoseReady(false);
+        usePostureStore.getState().setIsMonitoring(false);
+        if (canvasRef.current) {
+          clearCanvas(canvasRef.current);
+        }
+        return;
+      }
+
       usePostureStore.getState().setInitStatus("Starting camera...");
       usePostureStore.getState().setInitError(null);
       usePostureStore.getState().setIsPoseReady(false);

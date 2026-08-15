@@ -10,12 +10,6 @@
   --accent-muted: 99 102 241;
 }
 
-html:not(.dark) {
-  --surface: 250 250 252;
-  --surface-elevated: 255 255 255;
-  --surface-border: 0 0 0 / 0.08;
-}
-
 @layer base {
   body {
     @apply bg-surface font-sans antialiased text-white;

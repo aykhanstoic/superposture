@@ -84,6 +84,8 @@ export interface DashboardData {
   monthlyTrend: { date: string; avgScore: number }[];
 }
 
+export const CAMERA_OFF_VALUE = "__off__";
+
 export const ISSUE_LABELS: Record<IssueType, string> = {
   forward_head: "Forward Head",
   slouching: "Slouching",

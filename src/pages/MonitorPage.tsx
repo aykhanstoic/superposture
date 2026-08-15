@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/store/settingsStore";
+import { CAMERA_OFF_VALUE } from "@/types";
 import { useMonitoring } from "@/components/monitor/MonitoringProvider";
 import { CameraPreview } from "@/components/monitor/CameraPreview";
 import { PostureFeedback } from "@/components/monitor/PostureFeedback";
@@ -9,6 +10,7 @@ import { usePostureStore } from "@/store/postureStore";
 export function MonitorPage() {
   const { canvasRef, error, isActive } = useMonitoring();
   const showPreview = useSettingsStore((s) => s.showCameraPreview);
+  const cameraId = useSettingsStore((s) => s.cameraId);
   const paused = useSettingsStore((s) => s.paused);
   const isPoseReady = usePostureStore((s) => s.isPoseReady);
   const initStatus = usePostureStore((s) => s.initStatus);
@@ -20,7 +22,15 @@ export function MonitorPage() {
     <div className="grid gap-5 lg:grid-cols-2">
       <div className="space-y-5">
         <Card title="Live Monitor" subtitle="All processing happens locally on your device">
-          {showPreview ? (
+          {cameraId === CAMERA_OFF_VALUE ? (
+            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-surface-border bg-white/[0.02] text-center">
+              <div className="mb-3 h-3 w-3 rounded-full bg-white/25" />
+              <p className="text-sm text-white/70">Webcam is off</p>
+              <p className="mt-1 text-xs text-white/35">
+                Select a camera in Settings to resume monitoring.
+              </p>
+            </div>
+          ) : showPreview ? (
             <CameraPreview
               canvasRef={canvasRef}
               error={error}

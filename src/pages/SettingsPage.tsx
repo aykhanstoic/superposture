@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAutostartStatus, syncAutostart } from "@/services/autostart";
+import { CAMERA_OFF_VALUE } from "@/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
@@ -81,14 +82,21 @@ export function SettingsPage() {
           value={settings.cameraId}
           onChange={(e) => settings.setCameraId(e.target.value)}
           options={
-            devices.length > 0
-              ? devices.map((d) => ({
-                  value: d.deviceId,
-                  label: d.label,
-                }))
-              : [{ value: "", label: "No cameras found" }]
+            [
+              { value: CAMERA_OFF_VALUE, label: "Webcam off" },
+              ...(devices.length > 0
+                ? devices.map((d) => ({
+                    value: d.deviceId,
+                    label: d.label,
+                  }))
+                : [{ value: "", label: "No cameras found" }]),
+            ]
           }
         />
+        <p className="mt-2 text-xs text-white/40">
+          Select <span className="text-white/60">Webcam off</span> to stop
+          camera capture completely.
+        </p>
       </Card>
 
       <Card title="General">
@@ -97,11 +105,6 @@ export function SettingsPage() {
           description="Start PostureGuard when you log in"
           checked={settings.launchOnStartup}
           onChange={settings.setLaunchOnStartup}
-        />
-        <Toggle
-          label="Dark mode"
-          checked={settings.darkMode}
-          onChange={settings.setDarkMode}
         />
         <Toggle
           label="Notification sounds"
