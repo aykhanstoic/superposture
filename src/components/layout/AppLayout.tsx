@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useLicenseStatus } from "@/store/licenseStore";
 
 type Page = "monitor" | "dashboard" | "history" | "settings";
 
@@ -15,6 +16,8 @@ const navItems: { id: Page; label: string; icon: string }[] = [
 ];
 
 export function Sidebar({ active, onNavigate }: SidebarProps) {
+  const licenseStatus = useLicenseStatus();
+
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-surface-border bg-surface px-4 py-6">
       <div className="mb-8 flex items-center gap-3 px-2">
@@ -44,6 +47,18 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
+      {licenseStatus.state === "trial" && (
+        <button
+          onClick={() => onNavigate("settings")}
+          className="mb-3 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2 text-left text-[11px] leading-snug text-accent/90 transition-colors hover:bg-accent/15"
+        >
+          Trial — {licenseStatus.daysLeft} day
+          {licenseStatus.daysLeft === 1 ? "" : "s"} left
+          <span className="block text-[10px] text-white/40">
+            Enter a key in Settings
+          </span>
+        </button>
+      )}
       <p className="px-2 text-[10px] leading-relaxed text-white/25">
         Webcam data never leaves your device.
       </p>

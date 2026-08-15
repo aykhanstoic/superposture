@@ -1,11 +1,48 @@
 import { useEffect, useState } from "react";
+import { ActivationForm } from "@/components/license/ActivationForm";
 import { getAutostartStatus, syncAutostart } from "@/services/autostart";
+import { BUY_URL } from "@/services/license";
+import { useLicenseStatus, useLicenseStore } from "@/store/licenseStore";
 import { CAMERA_OFF_VALUE } from "@/types";
 import { useSettingsStore } from "@/store/settingsStore";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { Slider } from "@/components/ui/Slider";
 import { Toggle } from "@/components/ui/Toggle";
+
+function LicenseCard() {
+  const status = useLicenseStatus();
+  const licenseKey = useLicenseStore((s) => s.licenseKey);
+
+  if (status.state === "activated") {
+    return (
+      <Card title="License" subtitle="Thanks for supporting PostureGuard!">
+        <p className="text-sm text-white/70">
+          Activated{licenseKey ? ` — ${licenseKey}` : ""}
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      title="License"
+      subtitle={
+        status.state === "trial"
+          ? `Free trial — ${status.daysLeft} day${status.daysLeft === 1 ? "" : "s"} left`
+          : "Trial ended"
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-xs text-white/40">
+          Buy once at <span className="text-white/60">{BUY_URL}</span> — your
+          key arrives by email.
+        </p>
+        <ActivationForm />
+      </div>
+    </Card>
+  );
+}
 
 export function SettingsPage() {
   const settings = useSettingsStore();
@@ -112,6 +149,8 @@ export function SettingsPage() {
           onChange={settings.setNotificationSounds}
         />
       </Card>
+
+      <LicenseCard />
 
       <Card title="Privacy">
         <p className="text-sm leading-relaxed text-white/50">

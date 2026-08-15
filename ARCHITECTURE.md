@@ -252,12 +252,19 @@ Key format: `PG-` followed by four groups of four uppercase alphanumeric charact
 Lookups are case-insensitive. A `valid: false` response is definitive (the app may
 show "invalid key"); network errors are not (the app must offer retry, never lock out).
 
-**In-app licensing rules:**
+**In-app licensing rules** (implemented in `src/services/license.ts`,
+`src/store/licenseStore.ts`, `src/components/license/`):
 
+- 14-day full-featured trial starts on first launch (`licenseStore`, persisted
+  locally). A sidebar badge shows days remaining; the License card in Settings
+  accepts a key at any time. When the trial expires, a blocking screen with the
+  purchase URL and key entry replaces the app (monitoring stops).
 - Validation happens **once**, at activation. No phone-home, no re-validation,
   no hard device limits — consistent with the privacy pitch and one-time pricing.
 - Network failure at activation shows a retry, never a lock-out of a valid key.
-- Trial state and the activation receipt are stored locally.
+  Definitive `valid:false` responses show "invalid"/"refunded" messages.
+- The CSP allows `connect-src` to the license host only; this stays the app's
+  sole network call.
 - Anti-piracy is intentionally minimal: honest-user friction costs more than
   piracy does at this price point.
 
