@@ -2,7 +2,7 @@
 
 Privacy-first posture monitoring desktop app: webcam → on-device MediaPipe pose
 detection → posture score → reminder notifications. Nothing leaves the machine.
-Sold as a **$35 one-time purchase with a 14-day free trial** (no subscription,
+Sold as a **$9.99 one-time purchase with a 7-day free trial** (no subscription,
 no accounts).
 
 Full architecture (app internals, licensing/commercial layer, roadmap):
@@ -13,7 +13,7 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
 **Done and working:**
 - The full monitoring product: pose pipeline, scoring, reminders, tray,
   SQLite stats, dashboard/history pages
-- 14-day trial + license activation flow in the app (`src/services/license.ts`,
+- 7-day trial + license activation flow in the app (`src/services/license.ts`,
   `src/store/licenseStore.ts`, `src/components/license/`) — trial badge in
   sidebar, License card in Settings, blocking screen on expiry
 - Website + license backend **deployed**: https://postureguard-site.vercel.app
@@ -23,8 +23,9 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
 - Renamed **PostureGuard → UpSit** everywhere (2026-08-16); key prefix `PG-` → `UP-`
   (contract updated in ARCHITECTURE.md §3.2 first, zero keys had been issued)
 - Upstash Redis attached to the Vercel project (free tier, `iad1`, eviction off)
-- Stripe **test mode** configured via CLI: product `prod_V57svZ23vG7XAd`, $35
-  Payment Link, webhook (`checkout.session.completed` + `charge.refunded`);
+- Stripe **test mode** configured via CLI: product `prod_V57svZ23vG7XAd` with
+  Payment Link (created at $35 — **price needs updating to $9.99**), webhook
+  (`checkout.session.completed` + `charge.refunded`);
   `STRIPE_WEBHOOK_SECRET` set in Vercel (production, sensitive)
 - Domain **upsit.online** bought and attached to the Vercel project;
   `BUY_URL`/`VALIDATE_URL` and the CSP `connect-src` now point at it

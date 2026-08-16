@@ -210,10 +210,10 @@ The privacy guarantee is structural, and is the product's main differentiator:
 
 ### 3.1 Business model
 
-- **One-time purchase** (~$29–35), not a subscription — the app has zero marginal
+- **One-time purchase** ($9.99), not a subscription — the app has zero marginal
   server cost per user and its value doesn't grow monthly. Future major versions
   (v2) may be sold as paid upgrades.
-- **14-day free trial**, full-featured, no key required — the current app *is*
+- **7-day free trial**, full-featured, no key required — the current app *is*
   the trial build plus a nag-free countdown.
 - **Stripe** as payment processor (not a merchant of record), with **Stripe Tax**
   for VAT calculation at checkout. Tax registration/filing is handled by the
@@ -270,7 +270,7 @@ show "invalid key"); network errors are not (the app must offer retry, never loc
 **In-app licensing rules** (implemented in `src/services/license.ts`,
 `src/store/licenseStore.ts`, `src/components/license/`):
 
-- 14-day full-featured trial starts on first launch (`licenseStore`, persisted
+- 7-day full-featured trial starts on first launch (`licenseStore`, persisted
   locally). A sidebar badge shows days remaining; the License card in Settings
   accepts a key at any time. When the trial expires, a blocking screen with the
   purchase URL and key entry replaces the app (monitoring stops).

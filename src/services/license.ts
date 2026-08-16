@@ -1,7 +1,7 @@
 // License activation client. Contract: ARCHITECTURE.md §3.2.
 // This is the only network call in the entire app.
 
-export const TRIAL_DAYS = 14;
+export const TRIAL_DAYS = 7;
 export const BUY_URL = "https://www.upsit.online/#pricing";
 
 const VALIDATE_URL = "https://www.upsit.online/api/validate";
