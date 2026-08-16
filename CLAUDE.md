@@ -24,7 +24,8 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
   (contract updated in ARCHITECTURE.md §3.2 first, zero keys had been issued)
 - Upstash Redis attached to the Vercel project (free tier, `iad1`, eviction off)
 - Stripe **test mode** configured via CLI: product `prod_V57svZ23vG7XAd` with
-  Payment Link (created at $35 — **price needs updating to $9.99**), webhook
+  $9.99 Payment Link (test: https://buy.stripe.com/test_6oU7sM3BEcWp0pN02NfnO01;
+  the old $35 price and link are deactivated), webhook
   (`checkout.session.completed` + `charge.refunded`);
   `STRIPE_WEBHOOK_SECRET` set in Vercel (production, sensitive)
 - Domain **upsit.online** bought and attached to the Vercel project;
