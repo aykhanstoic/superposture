@@ -5,8 +5,9 @@ export type InferenceTier = "idle" | "stable" | "normal" | "degrading";
 export function tierIntervalMs(tier: InferenceTier): number {
   switch (tier) {
     case "idle":
+      return 1000; // 1 fps — nobody in frame; just watch for someone returning
     case "stable":
-      return 100; // 10 fps
+      return 125; // 8 fps
     case "normal":
       return 67; // ~15 fps
     case "degrading":

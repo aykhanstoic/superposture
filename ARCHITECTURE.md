@@ -101,15 +101,25 @@ flowchart TD
 **Landmarks used** (from the 33-point pose model): nose, eyes, ears, shoulders —
 only the upper body visible to a laptop webcam.
 
-**Posture heuristics** (`src/analysis/postureAnalyzer.ts`) — all measurements are
-normalized by shoulder width so they are distance- and resolution-independent:
+**Posture heuristics** (`src/analysis/postureAnalyzer.ts`) — geometry runs in
+isotropic, aspect-corrected coordinates (the video is letterboxed into the square
+inference input, never stretched) and is normalized by shoulder width, so
+measurements are true physical ratios: independent of camera resolution, aspect
+ratio, and sitting distance:
 
 | Issue | Signal |
 |---|---|
-| Forward head | Nose x-offset from shoulder midpoint |
-| Slouching | Vertical nose-to-shoulder-line clearance shrinking |
+| Forward head | Head width growing relative to shoulder width vs. personal baseline (craning toward the screen) |
+| Slouching | Nose-to-shoulder-line clearance dropping below personal baseline, with an absolute deep-slouch floor |
 | Uneven shoulders | Shoulder line tilt (or ear height difference) |
 | Leaning left/right | Signed nose offset from shoulder midpoint |
+
+Slouching and forward head are judged against **per-session adaptive baselines**
+that learn the user's own upright geometry (`AdaptiveBaseline`): adaptation is
+asymmetric — improvement is trusted within seconds, degradation takes minutes to
+absorb and is frozen entirely while the issue is active — so bad posture cannot
+quietly become the new normal. Landmark visibility comes from the model's real
+per-landmark confidence and gates every measurement.
 
 Each issue gets a confidence (0–1) mapped to a severity (low/medium/high) and a
 weighted penalty; **score = 100 − Σ penalties**, clamped to 0–100. Thresholds scale
@@ -132,12 +142,17 @@ architectural, not incidental:
 
   | Tier | When | Interval |
   |---|---|---|
-  | `idle` | No person detected ≥ 2 s | 100 ms |
-  | `stable` | Score ≥ 70, no notable issues, ≥ 5 s | 100 ms |
+  | `idle` | No person detected ≥ 2 s | 1000 ms |
+  | `stable` | Score ≥ 70, no notable issues, ≥ 5 s | 125 ms |
   | `normal` | Default | 67 ms |
   | `degrading` | Score < 70, sharp drop, or high-severity issue | 50 ms |
 
-- **UI updates throttled** to every 125 ms regardless of inference rate.
+- **UI updates throttled** to every 125 ms regardless of inference rate, and
+  suppressed entirely (store pushes and preview rastering) while the window is
+  hidden in the tray — the common all-day state.
+- **Landmark smoothing** is a dt-aware One Euro filter, so it behaves identically
+  across all tick rates: aggressive jitter removal when still, minimal lag when
+  moving.
 - **Re-entrancy guard** so a slow inference never stacks ticks.
 - **Lite pose model** with GPU delegate; CPU fallback if GPU init fails.
 

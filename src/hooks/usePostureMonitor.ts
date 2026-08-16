@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { analyzePosture } from "@/analysis/postureAnalyzer";
+import { PostureAnalyzer } from "@/analysis/postureAnalyzer";
 import {
   endSession,
   initDatabase,
@@ -53,11 +53,15 @@ export function usePostureMonitor(
   const bridgeRef = useRef<PoseBridge | null>(null);
   const smootherRef = useRef(new LandmarkSmoother());
   const scoreSmootherRef = useRef(new ScoreSmoother());
+  const analyzerRef = useRef(new PostureAnalyzer());
   const monitorIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSampleRef = useRef(0);
   const lastUiPushRef = useRef(0);
+  const lastPreviewDrawRef = useRef(0);
+  const previewClearedRef = useRef(false);
   const frameCountRef = useRef(0);
-  const scoreAccumulatorRef = useRef<number[]>([]);
+  const scoreSumRef = useRef(0);
+  const scoreCountRef = useRef(0);
   const sessionReminderRef = useRef(0);
   const initGenerationRef = useRef(0);
   const detectingRef = useRef(false);
@@ -102,6 +106,9 @@ export function usePostureMonitor(
   }, []);
 
   const pushUiUpdate = useCallback((result: PostureResult) => {
+    // The window spends most of the day hidden in the tray; skip store pushes
+    // (and the React re-renders they trigger) until it is visible again.
+    if (document.hidden) return;
     const now = performance.now();
     if (now - lastUiPushRef.current >= UI_UPDATE_INTERVAL_MS) {
       lastUiPushRef.current = now;
@@ -148,17 +155,19 @@ export function usePostureMonitor(
 
       detectingRef.current = true;
       try {
-        const raw = bridge.detect(video);
+        const frame = bridge.detect(video);
         const now = performance.now();
 
-        if (raw) {
+        if (frame) {
           frameCountRef.current += 1;
-          const smoothed = smootherRef.current.smooth(raw);
-          const rawResult = analyzePosture(
+          const smoothed = smootherRef.current.smooth(frame.landmarks, now);
+          const rawResult = analyzerRef.current.analyze(
             smoothed,
+            frame.aspect,
             useSettingsStore.getState().sensitivity,
+            now,
           );
-          const result = scoreSmootherRef.current.smooth(rawResult);
+          const result = scoreSmootherRef.current.smooth(rawResult, now);
 
           resultRef.current = result;
           checkReminder(result);
@@ -170,22 +179,33 @@ export function usePostureMonitor(
               result.status === "good" || result.status === "excellent",
             );
 
+          // Preview rastering is the most expensive per-tick work after
+          // inference itself: skip it entirely while the window is hidden,
+          // and cap it at the UI cadence rather than the inference rate.
           const preview = useSettingsStore.getState().showCameraPreview;
-          if (preview && canvas) {
-            drawPreview(canvas, video, smoothed);
-          } else if (canvas) {
+          if (preview && canvas && !document.hidden) {
+            if (now - lastPreviewDrawRef.current >= UI_UPDATE_INTERVAL_MS) {
+              lastPreviewDrawRef.current = now;
+              drawPreview(canvas, video, smoothed);
+              previewClearedRef.current = false;
+            }
+          } else if (canvas && !previewClearedRef.current) {
             clearCanvas(canvas);
+            previewClearedRef.current = true;
           }
 
           const sid = usePostureStore.getState().sessionId;
           if (sid && now - lastSampleRef.current >= SAMPLE_INTERVAL_MS) {
             lastSampleRef.current = now;
-            scoreAccumulatorRef.current.push(result.score);
+            scoreSumRef.current += result.score;
+            scoreCountRef.current += 1;
             saveScoreSample(sid, result.score);
           }
 
-          updateSchedulerScore(schedulerRef.current, result.score, now);
+          // Compute the tier before recording this frame's score, so the
+          // sharp-drop trigger compares against the previous frame.
           const tier = computeTier(schedulerRef.current, result, now);
+          updateSchedulerScore(schedulerRef.current, result.score, now);
           schedulerRef.current.tier = tier;
           scheduleMonitor(tierIntervalMs(tier));
         } else {
@@ -248,6 +268,7 @@ export function usePostureMonitor(
       bridgeRef.current = bridge;
       smootherRef.current.reset();
       scoreSmootherRef.current.reset();
+      analyzerRef.current.reset();
       schedulerRef.current = createSchedulerState();
       resultRef.current = null;
       poorPostureSinceRef.current = null;
@@ -261,7 +282,8 @@ export function usePostureMonitor(
       const id = await startSession();
       usePostureStore.getState().setSessionId(id);
       usePostureStore.getState().setIsMonitoring(true);
-      scoreAccumulatorRef.current = [];
+      scoreSumRef.current = 0;
+      scoreCountRef.current = 0;
       sessionReminderRef.current = 0;
 
       scheduleMonitor(tierIntervalMs("normal"));
@@ -280,9 +302,20 @@ export function usePostureMonitor(
 
     init();
 
+    // Store pushes are suppressed while hidden; refresh the UI immediately
+    // when the window comes back from the tray.
+    const onVisibilityChange = () => {
+      if (!document.hidden && resultRef.current) {
+        lastUiPushRef.current = 0;
+        usePostureStore.getState().setCurrentResult(resultRef.current);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       mounted = false;
       initGenerationRef.current += 1;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       clearMonitorInterval();
       if (secondsInterval) clearInterval(secondsInterval);
       if (fpsInterval) clearInterval(fpsInterval);
@@ -294,10 +327,9 @@ export function usePostureMonitor(
 
       const state = usePostureStore.getState();
       if (state.sessionId) {
-        const scores = scoreAccumulatorRef.current;
         const avg =
-          scores.length > 0
-            ? scores.reduce((a, b) => a + b, 0) / scores.length
+          scoreCountRef.current > 0
+            ? scoreSumRef.current / scoreCountRef.current
             : 0;
         endSession(
           state.sessionId,
