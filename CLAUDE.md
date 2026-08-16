@@ -2,9 +2,38 @@
 
 Privacy-first posture monitoring desktop app: webcam → on-device MediaPipe pose
 detection → posture score → reminder notifications. Nothing leaves the machine.
+Sold as a **$35 one-time purchase with a 14-day free trial** (no subscription,
+no accounts).
 
-Full architecture (app internals, planned licensing/commercial layer, roadmap):
-see [ARCHITECTURE.md](ARCHITECTURE.md).
+Full architecture (app internals, licensing/commercial layer, roadmap):
+see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole system.
+
+## Project status (as of 2026-08-16)
+
+**Done and working:**
+- The full monitoring product: pose pipeline, scoring, reminders, tray,
+  SQLite stats, dashboard/history pages
+- 14-day trial + license activation flow in the app (`src/services/license.ts`,
+  `src/store/licenseStore.ts`, `src/components/license/`) — trial badge in
+  sidebar, License card in Settings, blocking screen on expiry
+- Website + license backend **deployed**: https://postureguard-site.vercel.app
+  (repo `../postureguard-site`, auto-deploys from `main`); `/api/validate` is
+  live and CORS-enabled; Stripe webhook handler implemented but not yet configured
+- Both repos on GitHub (`aykhanstoic/superposture`, `aykhanstoic/postureguard-site`)
+
+**Not done yet (owner's account-side setup, in dependency order):**
+1. Attach Upstash Redis to the Vercel project (until then `/api/validate`
+   returns 500 = "retry later" to the app)
+2. Stripe: product + Payment Link + Stripe Tax + webhook to
+   `https://postureguard-site.vercel.app/api/webhooks/stripe`
+3. Resend account + verified domain; buy the real domain (name check first!)
+4. Code signing: Apple Developer for macOS notarization; Windows cert or accept
+   SmartScreen
+5. Real-world testing, then launch (soft launch → Product Hunt/Show HN)
+
+**When the real domain exists:** update `BUY_URL`/`VALIDATE_URL` in
+`src/services/license.ts` and the CSP `connect-src` in `src-tauri/tauri.conf.json`
+(baked into shipped binaries), plus the payment-link TODOs in the site repo.
 
 ## Stack
 
@@ -27,22 +56,30 @@ There are no tests yet.
 - `src/pose/` — camera→model bridge, landmark/score smoothing, adaptive inference scheduler
 - `src/analysis/postureAnalyzer.ts` — geometric posture heuristics and scoring
 - `src/hooks/usePostureMonitor.ts` — the core monitoring loop; owns the pipeline lifecycle
+- `src/services/license.ts` — trial constants, key validation client (the app's ONLY network call)
+- `src/store/` — Zustand stores: `settingsStore` (persisted), `postureStore` (runtime),
+  `licenseStore` (persisted trial/activation state)
+- `src/components/license/` — ActivationForm, TrialExpiredScreen
 - `src/database/db.ts` — SQLite schema + queries (sessions, score samples, daily stats)
-- `src/store/` — Zustand stores: `settingsStore` (persisted), `postureStore` (runtime)
 - `src/pages/`, `src/components/` — UI (Monitor, Dashboard, History, Settings)
 - `src-tauri/src/lib.rs` — tray icon, close-to-tray, plugin wiring; no custom commands
 
 ## Conventions & constraints
 
 - Privacy is the product: never add network calls except the one-time license
-  validation described in ARCHITECTURE.md §3.2. No telemetry.
+  validation described in ARCHITECTURE.md §3.2. No telemetry. The CSP pins
+  `connect-src` to the license host only — keep it that way.
 - Performance matters (app runs all day in the background): respect the inference
   scheduler tiers, UI-update throttling, and low-res capture settings.
 - Camera value `CAMERA_OFF_VALUE` (`"__off__"`) is a sentinel meaning "no capture at all".
 - Dark theme only; there is no light-mode CSS.
+- License keys: `PG-` + 4×4 chars, no `0/O/1/I`. `valid:false` from the server is
+  definitive; network/server errors must surface as "retry", never lock out a key.
 
 ## Sibling repo
 
 The website + license backend live in `../postureguard-site` (static landing page +
-serverless `POST /api/validate` and Stripe webhook). The API contract both repos
-implement is pinned in ARCHITECTURE.md §3.2 — change it there first, then both sides.
+Vercel functions: `POST /api/validate`, `POST /api/webhooks/stripe`). The API
+contract both repos implement is pinned in ARCHITECTURE.md §3.2 — change it there
+first, then both sides. Deployment checklist and Redis data model are in that
+repo's README.
