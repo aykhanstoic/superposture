@@ -34,7 +34,7 @@ export function TrialExpiredScreen() {
             Your free trial has ended
           </h2>
           <p className="mt-1.5 text-sm text-white/55">
-            Hope UpSit helped your posture this week. Buy it once
+            Hope UpSit helped your posture these three days. Buy it once
             and it's yours forever — no subscription, no account, and as
             always, nothing leaves your device.
           </p>

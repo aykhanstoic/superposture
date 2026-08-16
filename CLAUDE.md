@@ -2,7 +2,7 @@
 
 Privacy-first posture monitoring desktop app: webcam → on-device MediaPipe pose
 detection → posture score → reminder notifications. Nothing leaves the machine.
-Sold as a **$9.99 one-time purchase with a 7-day free trial** (no subscription,
+Sold as a **$9.99 one-time purchase with a 3-day free trial** (no subscription,
 no accounts).
 
 Full architecture (app internals, licensing/commercial layer, roadmap):
@@ -13,7 +13,7 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
 **Done and working:**
 - The full monitoring product: pose pipeline, scoring, reminders, tray,
   SQLite stats, dashboard/history pages
-- 7-day trial + license activation flow in the app (`src/services/license.ts`,
+- 3-day trial + license activation flow in the app (`src/services/license.ts`,
   `src/store/licenseStore.ts`, `src/components/license/`) — trial badge in
   sidebar, License card in Settings, blocking screen on expiry
 - Website + license backend **deployed**: https://postureguard-site.vercel.app
