@@ -1,6 +1,6 @@
-# PostureGuard — Architecture
+# UpSit — Architecture
 
-PostureGuard is a privacy-first desktop app that monitors sitting posture through the
+UpSit is a privacy-first desktop app that monitors sitting posture through the
 webcam, scores it in real time using on-device ML, and reminds the user to correct it.
 No video, images, or posture data ever leave the machine.
 
@@ -146,7 +146,7 @@ Tauri trade-off accepted for a single codebase.
 
 ### 2.5 Local data (SQLite)
 
-`src/database/db.ts`, via the Tauri SQL plugin (`sqlite:postureguard.db` in the
+`src/database/db.ts`, via the Tauri SQL plugin (`sqlite:upsit.db` in the
 app data directory). Schema:
 
 ```sql
@@ -217,7 +217,7 @@ sequenceDiagram
     U->>W: Click "Buy"
     W->>S: Stripe Payment Link / Checkout
     S->>B: webhook checkout.session.completed
-    B->>B: generate key PG-XXXX-XXXX-XXXX-XXXX, store {key, email}
+    B->>B: generate key UP-XXXX-XXXX-XXXX-XXXX, store {key, email}
     B->>U: email the key (Resend/Postmark)
     U->>A: paste key on activation screen
     A->>B: POST /validate { key }
@@ -240,15 +240,15 @@ sequenceDiagram
 POST /api/validate
 Content-Type: application/json
 
-Request:  { "key": "PG-XXXX-XXXX-XXXX-XXXX" }
+Request:  { "key": "UP-XXXX-XXXX-XXXX-XXXX" }
 
 200 OK:   { "valid": true }
 200 OK:   { "valid": false, "reason": "not_found" | "revoked" }
 400:      { "error": "malformed_request" }   — missing/invalid key format
 ```
 
-Key format: `PG-` followed by four groups of four uppercase alphanumeric characters
-(`crockford base32`-safe: no `0/O/1/I`), e.g. `PG-7XK4-M9P2-QRTV-8WHJ`.
+Key format: `UP-` followed by four groups of four uppercase alphanumeric characters
+(`crockford base32`-safe: no `0/O/1/I`), e.g. `UP-7XK4-M9P2-QRTV-8WHJ`.
 Lookups are case-insensitive. A `valid: false` response is definitive (the app may
 show "invalid key"); network errors are not (the app must offer retry, never lock out).
 

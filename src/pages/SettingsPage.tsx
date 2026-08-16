@@ -16,7 +16,7 @@ function LicenseCard() {
 
   if (status.state === "activated") {
     return (
-      <Card title="License" subtitle="Thanks for supporting PostureGuard!">
+      <Card title="License" subtitle="Thanks for supporting UpSit!">
         <p className="text-sm text-white/70">
           Activated{licenseKey ? ` — ${licenseKey}` : ""}
         </p>
@@ -139,7 +139,7 @@ export function SettingsPage() {
       <Card title="General">
         <Toggle
           label="Launch on startup"
-          description="Start PostureGuard when you log in"
+          description="Start UpSit when you log in"
           checked={settings.launchOnStartup}
           onChange={settings.setLaunchOnStartup}
         />
@@ -154,7 +154,7 @@ export function SettingsPage() {
 
       <Card title="Privacy">
         <p className="text-sm leading-relaxed text-white/50">
-          PostureGuard processes all webcam data locally. No frames are uploaded,
+          UpSit processes all webcam data locally. No frames are uploaded,
           no account is required, and the app works fully offline after
           installation.
         </p>

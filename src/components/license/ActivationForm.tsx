@@ -23,7 +23,7 @@ export function ActivationForm() {
       setState({
         phase: "error",
         message:
-          "That doesn't look like a license key. It has the form PG-XXXX-XXXX-XXXX-XXXX.",
+          "That doesn't look like a license key. It has the form UP-XXXX-XXXX-XXXX-XXXX.",
         retryable: false,
       });
       return;
@@ -69,7 +69,7 @@ export function ActivationForm() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !validating) activate();
           }}
-          placeholder="PG-XXXX-XXXX-XXXX-XXXX"
+          placeholder="UP-XXXX-XXXX-XXXX-XXXX"
           spellCheck={false}
           autoCapitalize="characters"
           className="w-full rounded-xl border border-surface-border bg-white/5 px-4 py-2 font-mono text-sm tracking-wider text-white placeholder-white/25 outline-none transition-colors focus:border-accent/60"

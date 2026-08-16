@@ -29,6 +29,6 @@ export const useSettingsStore = create<SettingsState>()(
       togglePaused: () => set((s) => ({ paused: !s.paused })),
       setShowCameraPreview: (showCameraPreview) => set({ showCameraPreview }),
     }),
-    { name: "postureguard-settings" },
+    { name: "upsit-settings" },
   ),
 );

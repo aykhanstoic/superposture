@@ -2,7 +2,7 @@ import Database from "@tauri-apps/plugin-sql";
 import { format, subDays } from "date-fns";
 import type { DashboardData, DailyStats, SessionRecord } from "@/types";
 
-const DB_PATH = "sqlite:postureguard.db";
+const DB_PATH = "sqlite:upsit.db";
 
 let dbInstance: Database | null = null;
 

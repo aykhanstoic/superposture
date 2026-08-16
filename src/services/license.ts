@@ -2,11 +2,11 @@
 // This is the only network call in the entire app.
 
 export const TRIAL_DAYS = 14;
-export const BUY_URL = "https://postureguard-site.vercel.app/#pricing";
+export const BUY_URL = "https://www.upsit.online/#pricing";
 
-const VALIDATE_URL = "https://postureguard-site.vercel.app/api/validate";
+const VALIDATE_URL = "https://www.upsit.online/api/validate";
 
-export const LICENSE_KEY_PATTERN = /^PG(-[A-Z0-9]{4}){4}$/;
+export const LICENSE_KEY_PATTERN = /^UP(-[A-Z0-9]{4}){4}$/;
 
 export function normalizeLicenseKey(raw: string): string {
   return raw.trim().toUpperCase();

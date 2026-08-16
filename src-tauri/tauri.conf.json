@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PostureGuard",
+  "productName": "UpSit",
   "version": "1.0.0",
-  "identifier": "com.postureguard.desktop",
+  "identifier": "com.upsit.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "PostureGuard",
+        "title": "UpSit",
         "width": 1100,
         "height": 720,
         "minWidth": 900,
@@ -25,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https://postureguard-site.vercel.app; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:;"
+      "csp": "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' https://www.upsit.online; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self' blob:;"
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",
@@ -45,7 +45,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:postureguard.db"]
+      "preload": ["sqlite:upsit.db"]
     }
   }
 }

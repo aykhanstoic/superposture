@@ -1,12 +1,12 @@
 [package]
-name = "postureguard"
+name = "upsit"
 version = "1.0.0"
 description = "Privacy-first posture monitoring desktop app"
-authors = ["PostureGuard"]
+authors = ["UpSit"]
 edition = "2021"
 
 [lib]
-name = "postureguard_lib"
+name = "upsit_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

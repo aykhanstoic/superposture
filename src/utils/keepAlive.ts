@@ -1,4 +1,4 @@
-const LOCK_ID = "postureguard-tray-keepalive";
+const LOCK_ID = "upsit-tray-keepalive";
 
 let releaseLock: (() => void) | null = null;
 

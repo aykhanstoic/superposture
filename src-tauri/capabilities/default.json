@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for PostureGuard",
+  "description": "Default capabilities for UpSit",
   "windows": ["main"],
   "permissions": [
     "core:default",

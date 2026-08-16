@@ -20,9 +20,9 @@ export function TrialExpiredScreen() {
     <div className="flex h-screen items-center justify-center bg-surface p-6">
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-surface-border bg-surface-elevated p-8 shadow-sm">
         <div className="flex items-center gap-3">
-          <img src="/postureguard.svg" alt="" className="h-9 w-9 rounded-lg" />
+          <img src="/upsit.svg" alt="" className="h-9 w-9 rounded-lg" />
           <div>
-            <h1 className="text-base font-semibold text-white">PostureGuard</h1>
+            <h1 className="text-base font-semibold text-white">UpSit</h1>
             <p className="text-[10px] uppercase tracking-widest text-white/35">
               Local & Private
             </p>
@@ -34,7 +34,7 @@ export function TrialExpiredScreen() {
             Your free trial has ended
           </h2>
           <p className="mt-1.5 text-sm text-white/55">
-            Hope PostureGuard helped your posture these two weeks. Buy it once
+            Hope UpSit helped your posture these two weeks. Buy it once
             and it's yours forever — no subscription, no account, and as
             always, nothing leaves your device.
           </p>

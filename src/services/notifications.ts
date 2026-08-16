@@ -39,7 +39,7 @@ export async function showPostureReminder(
 
   if (!isTauri()) {
     if (Notification.permission === "granted") {
-      new Notification("PostureGuard", { body });
+      new Notification("UpSit", { body });
     }
     return;
   }
@@ -48,7 +48,7 @@ export async function showPostureReminder(
   if (!granted) return;
 
   await sendNotification({
-    title: "PostureGuard",
+    title: "UpSit",
     body,
     sound: playSound ? "default" : undefined,
   });

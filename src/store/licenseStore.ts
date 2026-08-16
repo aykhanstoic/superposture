@@ -26,7 +26,7 @@ export const useLicenseStore = create<LicenseState>()(
       storeActivation: (licenseKey) =>
         set({ licenseKey, activatedAt: new Date().toISOString() }),
     }),
-    { name: "postureguard-license" },
+    { name: "upsit-license" },
   ),
 );
 

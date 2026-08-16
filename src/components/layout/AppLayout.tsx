@@ -21,9 +21,9 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-surface-border bg-surface px-4 py-6">
       <div className="mb-8 flex items-center gap-3 px-2">
-        <img src="/postureguard.svg" alt="" className="h-8 w-8 rounded-lg" />
+        <img src="/upsit.svg" alt="" className="h-8 w-8 rounded-lg" />
         <div>
-          <h1 className="text-sm font-semibold text-white">PostureGuard</h1>
+          <h1 className="text-sm font-semibold text-white">UpSit</h1>
           <p className="text-[10px] uppercase tracking-widest text-white/35">
             Local & Private
           </p>

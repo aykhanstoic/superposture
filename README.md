@@ -1,8 +1,8 @@
-# PostureGuard
+# UpSit
 
 A privacy-first desktop app that monitors your posture using your webcam — entirely on your device.
 
-![PostureGuard](public/postureguard.svg)
+![UpSit](public/upsit.svg)
 
 ## Features
 
@@ -18,7 +18,7 @@ A privacy-first desktop app that monitors your posture using your webcam — ent
 
 ```powershell
 npm install
-npm run tauri icon public/postureguard.svg   # first time only
+npm run tauri icon public/upsit.svg   # first time only
 npm run tauri:dev                            # development
 npm run tauri:build                          # production installer
 ```
@@ -29,8 +29,8 @@ See **[DEVELOPMENT.md](./DEVELOPMENT.md)** for full setup, architecture, and tro
 
 After `npm run tauri:build`:
 
-- `src-tauri/target/release/bundle/nsis/PostureGuard_1.0.0_x64-setup.exe`
-- `src-tauri/target/release/bundle/msi/PostureGuard_1.0.0_x64_en-US.msi`
+- `src-tauri/target/release/bundle/nsis/UpSit_1.0.0_x64-setup.exe`
+- `src-tauri/target/release/bundle/msi/UpSit_1.0.0_x64_en-US.msi`
 
 ## Requirements
 

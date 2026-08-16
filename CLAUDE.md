@@ -1,4 +1,4 @@
-# PostureGuard — desktop app
+# UpSit — desktop app
 
 Privacy-first posture monitoring desktop app: webcam → on-device MediaPipe pose
 detection → posture score → reminder notifications. Nothing leaves the machine.
@@ -18,22 +18,29 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
   sidebar, License card in Settings, blocking screen on expiry
 - Website + license backend **deployed**: https://postureguard-site.vercel.app
   (repo `../postureguard-site`, auto-deploys from `main`); `/api/validate` is
-  live and CORS-enabled; Stripe webhook handler implemented but not yet configured
+  live, CORS-enabled, and verified against the §3.2 contract
 - Both repos on GitHub (`aykhanstoic/superposture`, `aykhanstoic/postureguard-site`)
+- Renamed **PostureGuard → UpSit** everywhere (2026-08-16); key prefix `PG-` → `UP-`
+  (contract updated in ARCHITECTURE.md §3.2 first, zero keys had been issued)
+- Upstash Redis attached to the Vercel project (free tier, `iad1`, eviction off)
+- Stripe **test mode** configured via CLI: product `prod_V57svZ23vG7XAd`, $35
+  Payment Link, webhook (`checkout.session.completed` + `charge.refunded`);
+  `STRIPE_WEBHOOK_SECRET` set in Vercel (production, sensitive)
+- Domain **upsit.online** bought and attached to the Vercel project;
+  `BUY_URL`/`VALIDATE_URL` and the CSP `connect-src` now point at it
 
-**Not done yet (owner's account-side setup, in dependency order):**
-1. Attach Upstash Redis to the Vercel project (until then `/api/validate`
-   returns 500 = "retry later" to the app)
-2. Stripe: product + Payment Link + Stripe Tax + webhook to
-   `https://postureguard-site.vercel.app/api/webhooks/stripe`
-3. Resend account + verified domain; buy the real domain (name check first!)
-4. Code signing: Apple Developer for macOS notarization; Windows cert or accept
+**Not done yet (in dependency order):**
+1. DNS: point upsit.online at Vercel (`A @ 76.76.21.21` at the registrar, or
+   switch to Vercel nameservers) — until it resolves, activation in a freshly
+   built app falls back to "retry later"
+2. Resend: account + verify upsit.online (SPF/DKIM DNS records) +
+   `RESEND_API_KEY`/`EMAIL_FROM` env vars in Vercel
+3. Full test-mode purchase loop: buy → key email → activate → refund → revoke
+4. Stripe Tax origin address (dashboard); at launch recreate Payment Link +
+   webhook + secret in **live mode** and fill the payment-link TODOs in the site repo
+5. Code signing: Apple Developer for macOS notarization; Windows cert or accept
    SmartScreen
-5. Real-world testing, then launch (soft launch → Product Hunt/Show HN)
-
-**When the real domain exists:** update `BUY_URL`/`VALIDATE_URL` in
-`src/services/license.ts` and the CSP `connect-src` in `src-tauri/tauri.conf.json`
-(baked into shipped binaries), plus the payment-link TODOs in the site repo.
+6. Real-world testing, then launch (soft launch → Product Hunt/Show HN)
 
 ## Stack
 
@@ -73,7 +80,7 @@ There are no tests yet.
   scheduler tiers, UI-update throttling, and low-res capture settings.
 - Camera value `CAMERA_OFF_VALUE` (`"__off__"`) is a sentinel meaning "no capture at all".
 - Dark theme only; there is no light-mode CSS.
-- License keys: `PG-` + 4×4 chars, no `0/O/1/I`. `valid:false` from the server is
+- License keys: `UP-` + 4×4 chars, no `0/O/1/I`. `valid:false` from the server is
   definitive; network/server errors must surface as "retry", never lock out a key.
 
 ## Sibling repo

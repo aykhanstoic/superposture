@@ -14,7 +14,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_sql::Builder::default().build())
         .setup(|app| {
-            let show = MenuItem::with_id(app, "show", "Show PostureGuard", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "Show UpSit", true, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Pause Monitoring", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &pause, &quit])?;
@@ -22,7 +22,7 @@ pub fn run() {
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .tooltip("PostureGuard")
+                .tooltip("UpSit")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {

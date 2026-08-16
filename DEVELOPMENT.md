@@ -1,4 +1,4 @@
-# PostureGuard — Development Guide
+# UpSit — Development Guide
 
 Privacy-first desktop posture monitoring app built with **Tauri + React + TypeScript + Vite**.
 
@@ -34,7 +34,7 @@ cargo --version
 npm install
 
 # 2. Generate app icons (first time only)
-npm run tauri icon public/postureguard.svg
+npm run tauri icon public/upsit.svg
 
 # 3. Run in development mode
 npm run tauri:dev
@@ -107,7 +107,7 @@ src-tauri/
 - [x] Sessions table
 - [x] Score samples
 - [x] Daily aggregated stats
-- [x] All data stored in local `postureguard.db`
+- [x] All data stored in local `upsit.db`
 
 ### Phase 6 — Dashboard & statistics
 - [x] Today's monitoring time
@@ -187,8 +187,8 @@ npm run tauri:build
 Output: `src-tauri/target/release/bundle/`
 
 Windows installers produced:
-- `bundle/msi/PostureGuard_1.0.0_x64_en-US.msi`
-- `bundle/nsis/PostureGuard_1.0.0_x64-setup.exe`
+- `bundle/msi/UpSit_1.0.0_x64_en-US.msi`
+- `bundle/nsis/UpSit_1.0.0_x64-setup.exe`
 
 Run the dev build without an installer:
 
@@ -215,7 +215,7 @@ npm run tauri:dev
 - Should not happen — app uses setInterval + Web Lock keep-alive. Restart the app if monitoring pauses after long tray time.
 
 **Tray icon missing**
-- Run `npm run tauri icon public/postureguard.svg`
+- Run `npm run tauri icon public/upsit.svg`
 
 **High CPU usage**
 - Hide camera preview (Settings) — default is off
