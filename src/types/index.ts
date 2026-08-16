@@ -49,6 +49,7 @@ export interface AppSettings {
   notificationSounds: boolean;
   paused: boolean;
   showCameraPreview: boolean;
+  introDismissed: boolean;
 }
 
 export interface DailyStats {
@@ -86,11 +87,22 @@ export interface DashboardData {
 export const CAMERA_OFF_VALUE = "__off__";
 
 export const ISSUE_LABELS: Record<IssueType, string> = {
-  forward_head: "Forward Head",
+  forward_head: "Forward head",
   slouching: "Slouching",
-  uneven_shoulders: "Uneven Shoulders",
-  leaning_left: "Leaning Left",
-  leaning_right: "Leaning Right",
+  uneven_shoulders: "Uneven shoulders",
+  leaning_left: "Leaning left",
+  leaning_right: "Leaning right",
+};
+
+/** One actionable correction per issue — the UI coaches, it doesn't judge. */
+export const ISSUE_TIPS: Record<IssueType, string> = {
+  forward_head:
+    "Your head is drifting toward the screen — sit back and imagine a string lifting the crown of your head.",
+  slouching: "Lift your chest and let your shoulders settle down and back.",
+  uneven_shoulders:
+    "One shoulder is riding higher — relax your arms and level them out.",
+  leaning_left: "You're tilting left — re-center yourself over your chair.",
+  leaning_right: "You're tilting right — re-center yourself over your chair.",
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -100,5 +112,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   launchOnStartup: false,
   notificationSounds: true,
   paused: false,
-  showCameraPreview: false,
+  // On first run the preview is the product's proof-of-life: new users must
+  // SEE it tracking them. They can hide it from the preview itself.
+  showCameraPreview: true,
+  introDismissed: false,
 };

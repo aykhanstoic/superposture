@@ -5,6 +5,8 @@ interface PostureState {
   currentResult: PostureResult | null;
   isMonitoring: boolean;
   isPoseReady: boolean;
+  /** True until the analyzer's per-session baseline has been established. */
+  calibrating: boolean;
   initStatus: string;
   initError: string | null;
   fps: number;
@@ -18,6 +20,7 @@ interface PostureState {
   setCurrentResult: (result: PostureResult | null) => void;
   setIsMonitoring: (monitoring: boolean) => void;
   setIsPoseReady: (ready: boolean) => void;
+  setCalibrating: (calibrating: boolean) => void;
   setInitStatus: (status: string) => void;
   setInitError: (error: string | null) => void;
   setFps: (fps: number) => void;
@@ -35,6 +38,7 @@ export const usePostureStore = create<PostureState>((set) => ({
   currentResult: null,
   isMonitoring: false,
   isPoseReady: false,
+  calibrating: true,
   initStatus: "Initializing...",
   initError: null,
   fps: 0,
@@ -48,6 +52,7 @@ export const usePostureStore = create<PostureState>((set) => ({
   setCurrentResult: (currentResult) => set({ currentResult }),
   setIsMonitoring: (isMonitoring) => set({ isMonitoring }),
   setIsPoseReady: (isPoseReady) => set({ isPoseReady }),
+  setCalibrating: (calibrating) => set({ calibrating }),
   setInitStatus: (initStatus) => set({ initStatus }),
   setInitError: (initError) => set({ initError }),
   setFps: (fps) => set({ fps }),

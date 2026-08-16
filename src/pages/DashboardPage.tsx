@@ -6,6 +6,12 @@ import { formatDuration } from "@/utils";
 import { Card } from "@/components/ui/Card";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TrendChart } from "@/components/dashboard/TrendChart";
+import {
+  IconActivity,
+  IconBell,
+  IconFlame,
+  IconTimer,
+} from "@/components/ui/icons";
 
 export function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -30,22 +36,22 @@ export function DashboardPage() {
         <StatCard
           label="Today's Monitoring"
           value={formatDuration(data.todayMonitoringSeconds)}
-          icon="⏱"
+          icon={<IconTimer size={17} />}
         />
         <StatCard
           label="Average Score"
           value={Math.round(data.todayAvgScore).toString()}
-          icon="📊"
+          icon={<IconActivity size={17} />}
         />
         <StatCard
           label="Best Good Streak"
           value={formatDuration(data.longestGoodStreakSeconds)}
-          icon="🔥"
+          icon={<IconFlame size={17} />}
         />
         <StatCard
           label="Reminders Today"
           value={data.todayReminderCount.toString()}
-          icon="🔔"
+          icon={<IconBell size={17} />}
         />
       </div>
 

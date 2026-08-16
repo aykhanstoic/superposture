@@ -335,6 +335,12 @@ export class PostureAnalyzer {
     };
   }
 
+  /** False until the session baseline exists (the ~3s warmup after the user
+   * first appears); the UI shows a "calibrating" state meanwhile. */
+  isCalibrated(): boolean {
+    return this.clearanceBaseline.get() !== null;
+  }
+
   reset(): void {
     this.clearanceBaseline.reset();
     this.headRatioBaseline.reset();

@@ -71,6 +71,7 @@ export function usePostureMonitor(
   const resultRef = useRef<PostureResult | null>(null);
   const poorPostureSinceRef = useRef<number | null>(null);
   const lastReminderAtRef = useRef(0);
+  const calibratedRef = useRef(false);
 
   const checkReminder = useCallback((result: PostureResult) => {
     const { reminderIntervalMinutes, notificationSounds } =
@@ -168,6 +169,11 @@ export function usePostureMonitor(
             now,
           );
           const result = scoreSmootherRef.current.smooth(rawResult, now);
+
+          if (!calibratedRef.current && analyzerRef.current.isCalibrated()) {
+            calibratedRef.current = true;
+            usePostureStore.getState().setCalibrating(false);
+          }
 
           resultRef.current = result;
           checkReminder(result);
@@ -269,6 +275,8 @@ export function usePostureMonitor(
       smootherRef.current.reset();
       scoreSmootherRef.current.reset();
       analyzerRef.current.reset();
+      calibratedRef.current = false;
+      usePostureStore.getState().setCalibrating(true);
       schedulerRef.current = createSchedulerState();
       resultRef.current = null;
       poorPostureSinceRef.current = null;
@@ -279,7 +287,14 @@ export function usePostureMonitor(
       await dbPromise;
       if (!isCurrent()) return;
 
-      const id = await startSession();
+      // Persistence is optional by design (ARCHITECTURE.md §2.5): a broken
+      // database must never prevent monitoring itself from starting.
+      let id: number | null = null;
+      try {
+        id = await startSession();
+      } catch (err) {
+        console.warn("Session persistence unavailable (non-fatal):", err);
+      }
       usePostureStore.getState().setSessionId(id);
       usePostureStore.getState().setIsMonitoring(true);
       scoreSumRef.current = 0;

@@ -12,6 +12,7 @@ interface SettingsState extends AppSettings {
   setPaused: (paused: boolean) => void;
   togglePaused: () => void;
   setShowCameraPreview: (show: boolean) => void;
+  setIntroDismissed: (dismissed: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -28,6 +29,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPaused: (paused) => set({ paused }),
       togglePaused: () => set((s) => ({ paused: !s.paused })),
       setShowCameraPreview: (showCameraPreview) => set({ showCameraPreview }),
+      setIntroDismissed: (introDismissed) => set({ introDismissed }),
     }),
     { name: "upsit-settings" },
   ),

@@ -1,6 +1,6 @@
 [package]
 name = "upsit"
-version = "1.0.0"
+version = "1.0.1"
 description = "Privacy-first posture monitoring desktop app"
 authors = ["UpSit"]
 edition = "2021"

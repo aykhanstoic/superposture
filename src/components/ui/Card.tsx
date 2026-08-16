@@ -10,7 +10,7 @@ interface CardProps {
 export function Card({ children, className = "", title, subtitle }: CardProps) {
   return (
     <div
-      className={`rounded-2xl border border-surface-border bg-surface-elevated p-5 shadow-sm animate-slide-up ${className}`}
+      className={`rounded-2xl border border-white/[0.06] bg-surface-elevated bg-gradient-to-b from-white/[0.03] to-transparent p-5 shadow-lg shadow-black/20 animate-slide-up ${className}`}
     >
       {(title || subtitle) && (
         <div className="mb-4">

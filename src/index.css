@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --surface: 15 15 20;
-  --surface-elevated: 24 24 32;
+  --surface: 10 11 16;
+  --surface-elevated: 19 20 28;
   --surface-border: 255 255 255 / 0.08;
   --accent: 99 102 241;
   --accent-muted: 99 102 241;
@@ -15,6 +15,17 @@
     @apply bg-surface font-sans antialiased text-white;
     margin: 0;
     overflow: hidden;
+    /* Subtle depth behind the whole app; keeps the flat dark UI from
+       reading as a void. */
+    background-image: radial-gradient(
+      60rem 40rem at 15% -10%,
+      rgb(99 102 241 / 0.07),
+      transparent 60%
+    );
+  }
+
+  ::selection {
+    background: rgb(99 102 241 / 0.35);
   }
 
   ::-webkit-scrollbar {

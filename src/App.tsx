@@ -36,7 +36,7 @@ export default function App() {
   return (
     <MonitoringProvider>
       <AppLayout active={page} onNavigate={setPage}>
-        {page === "monitor" && <MonitorPage />}
+        {page === "monitor" && <MonitorPage onNavigate={setPage} />}
         {page === "dashboard" && <DashboardPage />}
         {page === "history" && <HistoryPage />}
         {page === "settings" && <SettingsPage />}
