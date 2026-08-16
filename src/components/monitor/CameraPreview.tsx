@@ -64,15 +64,17 @@ export function CameraPreview({
     <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/[0.06] bg-black/50">
       <canvas ref={canvasRef} className="h-full w-full object-cover mirror" />
 
-      {!isActive && (
+      {!isActive && !paused && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <p className="text-sm text-white/60">Starting camera...</p>
         </div>
       )}
 
-      {paused && isActive && (
+      {paused && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
-          <p className="text-sm font-medium text-white/80">Monitoring paused</p>
+          <p className="text-sm font-medium text-white/80">
+            Paused — camera released, light off
+          </p>
           <button
             onClick={onTogglePause}
             className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90"

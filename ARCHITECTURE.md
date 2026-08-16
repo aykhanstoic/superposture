@@ -200,6 +200,9 @@ The privacy guarantee is structural, and is the product's main differentiator:
 
 - Camera frames go `getUserMedia → canvas → MediaPipe WASM` — all in-process.
   No frame, landmark, or score is ever transmitted.
+- **Pausing releases the camera device entirely** (the OS camera indicator
+  turns off); the stream is reacquired on resume. "Paused" must never mean
+  "still capturing but not analyzing".
 - The only planned network call in the entire app is **one license validation at
   activation** (see §3). The app has no telemetry and no auto-fetching of models.
 - All history lives in a local SQLite file the user can delete.

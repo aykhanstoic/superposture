@@ -45,10 +45,12 @@ export function usePostureMonitor(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
 ) {
   const cameraId = useSettingsStore((s) => s.cameraId);
+  const paused = useSettingsStore((s) => s.paused);
   const togglePaused = useSettingsStore((s) => s.togglePaused);
 
   const cameraRef = useRef(camera);
   cameraRef.current = camera;
+  const wasPausedRef = useRef(false);
 
   const bridgeRef = useRef<PoseBridge | null>(null);
   const smootherRef = useRef(new LandmarkSmoother());
@@ -236,12 +238,18 @@ export function usePostureMonitor(
         return;
       }
 
-      usePostureStore.getState().setInitStatus("Starting camera...");
       usePostureStore.getState().setInitError(null);
       usePostureStore.getState().setIsPoseReady(false);
 
-      await cameraRef.current.startCamera();
-      if (!isCurrent()) return;
+      // While paused the camera device is not held at all (the OS camera
+      // indicator must be off) — the resume effect starts capture later.
+      if (useSettingsStore.getState().paused) {
+        usePostureStore.getState().setInitStatus("Paused");
+      } else {
+        usePostureStore.getState().setInitStatus("Starting camera...");
+        await cameraRef.current.startCamera();
+        if (!isCurrent()) return;
+      }
 
       usePostureStore.getState().setInitStatus("Loading pose model...");
 
@@ -362,6 +370,28 @@ export function usePostureMonitor(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraId]);
+
+  // Pause must release the camera device itself, not just skip analysis —
+  // a lit camera LED while "paused" reads as the app still watching, which
+  // is poison for a privacy product. Resume reacquires the stream.
+  useEffect(() => {
+    if (cameraId === CAMERA_OFF_VALUE) {
+      wasPausedRef.current = paused;
+      return;
+    }
+    if (paused) {
+      cameraRef.current.stopCamera();
+    } else if (wasPausedRef.current) {
+      cameraRef.current.startCamera().then(() => {
+        // Re-paused while the camera was still starting: release it again.
+        if (useSettingsStore.getState().paused) {
+          cameraRef.current.stopCamera();
+        }
+      });
+      usePostureStore.getState().setInitStatus("Detecting posture");
+    }
+    wasPausedRef.current = paused;
+  }, [paused, cameraId]);
 
   useEffect(() => {
     if (!isTauri()) return;
