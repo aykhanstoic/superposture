@@ -2,13 +2,13 @@
 
 Privacy-first posture monitoring desktop app: webcam → on-device MediaPipe pose
 detection → posture score → reminder notifications. Nothing leaves the machine.
-Sold as a **$9.99 one-time purchase with a 3-day free trial** (no subscription,
+Sold as a **$4.99 one-time purchase with a 3-day free trial** (no subscription,
 no accounts).
 
 Full architecture (app internals, licensing/commercial layer, roadmap):
 see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole system.
 
-## Project status (as of 2026-08-16)
+## Project status (as of 2026-08-17)
 
 **Done and working:**
 - The full monitoring product: pose pipeline, scoring, reminders, tray,
@@ -23,26 +23,22 @@ see [ARCHITECTURE.md](ARCHITECTURE.md) — the source of truth for the whole sys
 - Renamed **PostureGuard → UpSit** everywhere (2026-08-16); key prefix `PG-` → `UP-`
   (contract updated in ARCHITECTURE.md §3.2 first, zero keys had been issued)
 - Upstash Redis attached to the Vercel project (free tier, `iad1`, eviction off)
-- Stripe **test mode** configured via CLI: product `prod_V57svZ23vG7XAd` with
-  $9.99 Payment Link (test: https://buy.stripe.com/test_6oU7sM3BEcWp0pN02NfnO01;
-  the old $35 price and link are deactivated), webhook
-  (`checkout.session.completed` + `charge.refunded`);
-  `STRIPE_WEBHOOK_SECRET` set in Vercel (production, sensitive)
-- Domain **upsit.online** bought and attached to the Vercel project;
-  `BUY_URL`/`VALIDATE_URL` and the CSP `connect-src` now point at it
+- Domain **upsit.online** live (DNS resolves to Vercel); `BUY_URL`/`VALIDATE_URL`
+  and the CSP `connect-src` point at it
+- Resend live: upsit.online verified (SPF/DKIM), `RESEND_API_KEY`/`EMAIL_FROM`
+  in Vercel env
+- Stripe **live mode** wired (2026-08-16): product `prod_V5FMiIcIjxJtvo`,
+  $4.99 price, Payment Link https://buy.stripe.com/6oU7sM3BEcWp0pN02NfnO01,
+  webhook (`checkout.session.completed` + `charge.refunded`),
+  `STRIPE_WEBHOOK_SECRET` in Vercel
+- Full purchase loop verified end-to-end: buy → key email → activate →
+  refund → revoke (see `../postureguard-site/CLAUDE.md` for backend detail)
 
 **Not done yet (in dependency order):**
-1. DNS: point upsit.online at Vercel (`A @ 76.76.21.21` at the registrar, or
-   switch to Vercel nameservers) — until it resolves, activation in a freshly
-   built app falls back to "retry later"
-2. Resend: account + verify upsit.online (SPF/DKIM DNS records) +
-   `RESEND_API_KEY`/`EMAIL_FROM` env vars in Vercel
-3. Full test-mode purchase loop: buy → key email → activate → refund → revoke
-4. Stripe Tax origin address (dashboard); at launch recreate Payment Link +
-   webhook + secret in **live mode** and fill the payment-link TODOs in the site repo
-5. Code signing: Apple Developer for macOS notarization; Windows cert or accept
+1. Stripe Tax origin address (dashboard)
+2. Code signing: Apple Developer for macOS notarization; Windows cert or accept
    SmartScreen
-6. Real-world testing, then launch (soft launch → Product Hunt/Show HN)
+3. Real-world testing, then launch (soft launch → Product Hunt/Show HN)
 
 ## Stack
 

@@ -213,7 +213,7 @@ The privacy guarantee is structural, and is the product's main differentiator:
 
 ### 3.1 Business model
 
-- **One-time purchase** ($9.99), not a subscription — the app has zero marginal
+- **One-time purchase** ($4.99), not a subscription — the app has zero marginal
   server cost per user and its value doesn't grow monthly. Future major versions
   (v2) may be sold as paid upgrades.
 - **3-day free trial**, full-featured, no key required — the current app *is*
