@@ -20,6 +20,7 @@ import { PoseBridge } from "@/pose/poseBridge";
 import { LandmarkSmoother } from "@/pose/smoothing";
 import { ScoreSmoother } from "@/pose/scoreSmoothing";
 import { showPostureReminder } from "@/services/notifications";
+import { playSlouchTick } from "@/services/sound";
 import { usePostureStore } from "@/store/postureStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { CAMERA_OFF_VALUE, type PostureResult } from "@/types";
@@ -29,7 +30,7 @@ const SAMPLE_INTERVAL_MS = 5000;
 const UI_UPDATE_INTERVAL_MS = 125;
 const POOR_SCORE_THRESHOLD = 50;
 const RECOVER_SCORE_THRESHOLD = 55;
-const POOR_SCORE_DEBOUNCE_MS = 2000;
+const POOR_SCORE_DEBOUNCE_MS = 4000;
 
 function isVideoReady(video: HTMLVideoElement): boolean {
   return (
@@ -76,7 +77,7 @@ export function usePostureMonitor(
   const calibratedRef = useRef(false);
 
   const checkReminder = useCallback((result: PostureResult) => {
-    const { reminderIntervalMinutes, notificationSounds } =
+    const { reminderIntervalMinutes, notificationSounds, slouchTickSound } =
       useSettingsStore.getState();
 
     const now = Date.now();
@@ -86,6 +87,9 @@ export function usePostureMonitor(
       if (poorPostureSinceRef.current === null) {
         poorPostureSinceRef.current = now;
         usePostureStore.getState().setPoorPostureSince(now);
+        // Immediate, subtle feedback the moment posture drops — the full
+        // notification only follows if it stays poor past the debounce.
+        if (slouchTickSound) playSlouchTick();
       }
 
       const sustainedPoor =

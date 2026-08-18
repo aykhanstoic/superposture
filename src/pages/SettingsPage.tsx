@@ -149,6 +149,12 @@ export function SettingsPage() {
           checked={settings.notificationSounds}
           onChange={settings.setNotificationSounds}
         />
+        <Toggle
+          label="Slouch tick"
+          description="Play a soft tick the moment your posture drops"
+          checked={settings.slouchTickSound}
+          onChange={settings.setSlouchTickSound}
+        />
       </Card>
 
       <LicenseCard />

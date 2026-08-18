@@ -13,6 +13,7 @@ interface SettingsState extends AppSettings {
   togglePaused: () => void;
   setShowCameraPreview: (show: boolean) => void;
   setIntroDismissed: (dismissed: boolean) => void;
+  setSlouchTickSound: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -30,6 +31,7 @@ export const useSettingsStore = create<SettingsState>()(
       togglePaused: () => set((s) => ({ paused: !s.paused })),
       setShowCameraPreview: (showCameraPreview) => set({ showCameraPreview }),
       setIntroDismissed: (introDismissed) => set({ introDismissed }),
+      setSlouchTickSound: (slouchTickSound) => set({ slouchTickSound }),
     }),
     { name: "upsit-settings" },
   ),

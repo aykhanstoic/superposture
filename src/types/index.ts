@@ -50,6 +50,7 @@ export interface AppSettings {
   paused: boolean;
   showCameraPreview: boolean;
   introDismissed: boolean;
+  slouchTickSound: boolean;
 }
 
 export interface DailyStats {
@@ -116,4 +117,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // SEE it tracking them. They can hide it from the preview itself.
   showCameraPreview: true,
   introDismissed: false,
+  slouchTickSound: true,
 };
