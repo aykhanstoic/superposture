@@ -15,26 +15,41 @@ function getContext(): AudioContext | null {
 }
 
 /**
- * A soft, short woodblock-style tick — instant feedback the moment posture
- * drops, deliberately quieter and quicker than the reminder notification.
+ * A bright, clearly audible tick — instant feedback the moment posture
+ * drops. Two layers: a crisp high "tick" transient and a lower body tone
+ * that keeps it from sounding thin on laptop speakers.
  */
 export function playSlouchTick(): void {
   const ctx = getContext();
   if (!ctx) return;
 
   const t = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
 
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(1250, t);
-  osc.frequency.exponentialRampToValueAtTime(700, t + 0.05);
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, t);
+  master.gain.exponentialRampToValueAtTime(0.45, t + 0.004);
+  master.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  master.connect(ctx.destination);
 
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.15, t + 0.006);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+  // Crisp attack: bright square, falling slightly like a woodblock.
+  const tick = ctx.createOscillator();
+  tick.type = "square";
+  tick.frequency.setValueAtTime(1680, t);
+  tick.frequency.exponentialRampToValueAtTime(1180, t + 0.1);
+  const tickGain = ctx.createGain();
+  tickGain.gain.value = 0.55;
+  tick.connect(tickGain).connect(master);
 
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + 0.09);
+  // Body: sine an octave-ish below, so small speakers still carry it.
+  const body = ctx.createOscillator();
+  body.type = "sine";
+  body.frequency.setValueAtTime(840, t);
+  const bodyGain = ctx.createGain();
+  bodyGain.gain.value = 0.9;
+  body.connect(bodyGain).connect(master);
+
+  tick.start(t);
+  body.start(t);
+  tick.stop(t + 0.18);
+  body.stop(t + 0.18);
 }
