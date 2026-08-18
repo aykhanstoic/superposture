@@ -120,9 +120,12 @@ export function useCamera() {
       console.error("Camera start failed:", err);
       const message =
         err instanceof Error ? err.message : "Camera permission denied.";
+      const isMac = navigator.userAgent.includes("Mac");
       setError(
-        message.includes("NotAllowed")
-          ? "Camera permission denied. Allow camera access in Windows Settings."
+        message.includes("NotAllowed") || message.includes("NotFound")
+          ? isMac
+            ? "Camera permission denied. Allow camera access in System Settings > Privacy & Security > Camera."
+            : "Camera permission denied. Allow camera access in Windows Settings."
           : "Could not start camera. Check permissions and try again.",
       );
       setIsActive(false);
