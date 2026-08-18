@@ -24,12 +24,10 @@ const UNEVEN_BASE = 0.034;
 const LEAN_BASE = 0.06;
 
 // Baseline-relative onsets (fractional deviation from personal baseline).
-// Onsets are deliberately generous: normal fidgeting and relaxed-but-fine
-// sitting must not register — only clear departures from the baseline.
-const SLOUCH_DEFICIT_ONSET = 0.22;
-const SLOUCH_DEFICIT_RANGE = 0.32;
-const FORWARD_RISE_ONSET = 0.13;
-const FORWARD_RISE_RANGE = 0.24;
+const SLOUCH_DEFICIT_ONSET = 0.18;
+const SLOUCH_DEFICIT_RANGE = 0.3;
+const FORWARD_RISE_ONSET = 0.1;
+const FORWARD_RISE_RANGE = 0.22;
 
 // A shoulder span smaller than this (in frame-height units) means the person
 // is too far away / detection too unreliable to judge posture.
@@ -157,10 +155,7 @@ export class PostureAnalyzer {
     clampMin: SLOUCH_ABS_CLEARANCE,
     clampMax: 0.95,
     warmupSamples: 40,
-    // Deliberately below the top of the warmup window: people sit extra
-    // straight right after starting the app, and a baseline learned from
-    // that pose would make their normal relaxed sitting read as a deficit.
-    warmupPercentile: 0.6,
+    warmupPercentile: 0.7,
     betterRatePerS: 0.35,
     worseRatePerS: 0.0035,
   });
@@ -324,22 +319,11 @@ export class PostureAnalyzer {
       if (leanIssue) issues.push(leanIssue);
     }
 
-    // Dominant issue counts fully, the rest at half weight: the issue
-    // signals are correlated (a slouch usually drags forward-head and lean
-    // along with it), and summing them linearly double-punished one bad
-    // posture into scores far below what any single signal justified.
-    const penalties = issues
-      .map((issue) => {
-        const weight =
-          issue.severity === "high" ? 20 : issue.severity === "medium" ? 14 : 8;
-        return weight * issue.confidence;
-      })
-      .sort((a, b) => b - a);
-    const penalty =
-      penalties.length === 0
-        ? 0
-        : penalties[0] +
-          0.5 * penalties.slice(1).reduce((sum, p) => sum + p, 0);
+    const penalty = issues.reduce((sum, issue) => {
+      const weight =
+        issue.severity === "high" ? 20 : issue.severity === "medium" ? 14 : 8;
+      return sum + weight * issue.confidence;
+    }, 0);
 
     const score = clamp(100 - penalty, 0, 100);
 

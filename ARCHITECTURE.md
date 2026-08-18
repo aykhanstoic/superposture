@@ -92,7 +92,7 @@ flowchart TD
     analyze["postureAnalyzer<br/>geometric heuristics → issues + score 0–100"] --> ssmooth
     ssmooth["ScoreSmoother"] --> fanout{" "}
     fanout --> ui["postureStore → UI<br/>(throttled to 8 Hz)"]
-    fanout --> rem["Feedback logic<br/>score < 50 → tick; sustained 4s → notification"]
+    fanout --> rem["Feedback logic<br/>score < 50 → tick; sustained 2.5s → notification"]
     fanout --> persist["SQLite<br/>score sample every 5s"]
     fanout --> sched["Inference scheduler<br/>adjusts tick rate"]
     sched -.->|"reschedules"| bridge
@@ -126,12 +126,11 @@ weighted penalty; **score = 100 − Σ penalties**, clamped to 0–100. Threshol
 with the user's sensitivity setting. If shoulders/nose aren't visible, the analyzer
 returns a neutral result (score 50) rather than guessing.
 
-**Feedback pipeline:** issue penalties combine as *dominant + half the rest*
-(the signals are correlated; linear summing double-punished one bad posture),
-and the display score is smoothed with a slow (~2 s) time constant so it does
-not twitch through thresholds on transient wobbles. The moment the score drops
-below 50, a soft synthesized tick plays (Web Audio, toggleable). If it stays
-below 50 for 4 s, a desktop notification fires, subject to a cooldown
+**Feedback pipeline:** the display score is smoothed with a mild (~1.1 s) time
+constant — enough to take the twitch out of the number without making it numb.
+The moment the score drops below 50, a synthesized tick plays (Web Audio,
+toggleable). If it stays below 50 for 2.5 s, a desktop notification fires,
+subject to a cooldown
 (`reminderIntervalMinutes`, default 3 min). Recovery above 55 (hysteresis)
 resets the cooldown. A reminder also raises `postureAlertRequested`, which
 navigates the app to the Monitor page and pops open the camera preview.

@@ -30,7 +30,7 @@ const SAMPLE_INTERVAL_MS = 5000;
 const UI_UPDATE_INTERVAL_MS = 125;
 const POOR_SCORE_THRESHOLD = 50;
 const RECOVER_SCORE_THRESHOLD = 55;
-const POOR_SCORE_DEBOUNCE_MS = 4000;
+const POOR_SCORE_DEBOUNCE_MS = 2500;
 
 function isVideoReady(video: HTMLVideoElement): boolean {
   return (

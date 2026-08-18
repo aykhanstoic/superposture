@@ -2,10 +2,10 @@ import type { PostureResult } from "@/types";
 import { getStatusFromScore, lerp } from "@/utils";
 
 // Time-constant of the display-score EMA. dt-aware so the smoothing feels the
-// same whether the scheduler is ticking at 50ms or 1s. Posture changes over
-// seconds, not frames — a slow constant keeps the score from twitching
-// through the reminder threshold on transient wobbles.
-const SCORE_TAU_S = 2.0;
+// same whether the scheduler is ticking at 50ms or 1s. Kept mild: enough to
+// take the twitch out of the number, not enough to stop it reacting — a long
+// constant made the score feel numb and unable to reach poor territory.
+const SCORE_TAU_S = 1.1;
 
 /** Lightweight dt-aware EMA on the final numeric score for stable UI display. */
 export class ScoreSmoother {
