@@ -21,32 +21,51 @@ async function waitForVideoElement(
 async function requestCameraStream(
   cameraId: string,
 ): Promise<MediaStream | null> {
-  const baseVideo = {
-    width: { ideal: 480 },
-    height: { ideal: 360 },
-    frameRate: { ideal: 15, max: 15 },
-  };
-
   if (cameraId === CAMERA_OFF_VALUE) {
     return null;
   }
 
+  const constraintSets: MediaTrackConstraints[] = [];
+
   if (cameraId) {
+    // Try saved camera with preferred resolution first
+    constraintSets.push({
+      deviceId: { exact: cameraId },
+      width: { ideal: 480 },
+      height: { ideal: 360 },
+      frameRate: { ideal: 15, max: 15 },
+    });
+    // Saved camera with no resolution constraints (WKWebView fallback)
+    constraintSets.push({
+      deviceId: { exact: cameraId },
+    });
+  }
+
+  // Default camera with preferred resolution
+  constraintSets.push({
+    width: { ideal: 480 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 15, max: 15 },
+  });
+  // Default camera, no constraints at all (final fallback)
+  constraintSets.push(true as unknown as MediaTrackConstraints);
+
+  for (const constraints of constraintSets) {
     try {
       return await navigator.mediaDevices.getUserMedia({
-        video: { ...baseVideo, deviceId: { exact: cameraId } },
+        video: constraints,
         audio: false,
       });
     } catch {
-      console.warn("Saved camera unavailable, falling back to default camera.");
-      useSettingsStore.getState().setCameraId("");
+      // try next constraint set
     }
   }
 
-  return navigator.mediaDevices.getUserMedia({
-    video: baseVideo,
-    audio: false,
-  });
+  if (cameraId) {
+    useSettingsStore.getState().setCameraId("");
+  }
+
+  throw new Error("No camera available. Check permissions and try again.");
 }
 
 export function useCamera() {
@@ -118,11 +137,13 @@ export function useCamera() {
       await enumerateDevices();
     } catch (err) {
       console.error("Camera start failed:", err);
-      const message =
-        err instanceof Error ? err.message : "Camera permission denied.";
+      const name = (err as any)?.name ?? "";
+      const isMac = navigator.userAgent.includes("Mac");
       setError(
-        message.includes("NotAllowed")
-          ? "Camera permission denied. Allow camera access in Windows Settings."
+        name === "NotAllowedError"
+          ? isMac
+            ? "Camera permission denied. Allow camera access in System Settings > Privacy & Security > Camera."
+            : "Camera permission denied. Allow camera access in Windows Settings."
           : "Could not start camera. Check permissions and try again.",
       );
       setIsActive(false);
