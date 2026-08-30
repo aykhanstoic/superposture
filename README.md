@@ -8,7 +8,7 @@
   [![Latest release](https://img.shields.io/github/v/release/aykhanstoic/superposture?style=flat-square&label=release)](https://github.com/aykhanstoic/superposture/releases/latest)
   [![Build](https://github.com/aykhanstoic/superposture/actions/workflows/build.yml/badge.svg)](https://github.com/aykhanstoic/superposture/actions/workflows/build.yml)
   [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-informational?style=flat-square)](#requirements)
-  [![License](https://img.shields.io/badge/license-proprietary-red?style=flat-square)](#license)
+  [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](./LICENSE)
 
   [Website](https://www.upsit.online) · [Download](https://github.com/aykhanstoic/superposture/releases/latest) · [Development Guide](./DEVELOPMENT.md) · [Architecture](./ARCHITECTURE.md)
 </div>
@@ -80,4 +80,4 @@ Grab the latest build from the [Releases page](https://github.com/aykhanstoic/su
 
 ## License
 
-Proprietary — one-time purchase license. The app runs on a free trial until activated; see [upsit.online](https://www.upsit.online) for licensing details.
+Open source under the [MIT License](./LICENSE). Prebuilt installers and support are also available via [upsit.online](https://www.upsit.online).
