@@ -15,6 +15,10 @@
 
 ---
 
+<div align="center">
+  <img src=".github/media/demo.gif" alt="UpSit tracking posture live: the score drops from 72 to 28 as the person slouches, the posture coach flags the forward head, and a real desktop notification fires — all captured in one unedited take" width="820" />
+</div>
+
 ## What it does
 
 UpSit watches your posture through your webcam while you work, scores it in real time with an on-device pose-detection model, and nudges you with a notification when you've been slouching for too long. Every frame is processed locally on your machine — nothing is ever uploaded.
